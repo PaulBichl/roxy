@@ -1,0 +1,255 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "roxy"
+dynamic = ["version"] # only relevant if we want to do a release
+description = "Repository for the P5 Project"
+readme = "README.md"
+requires-python = ">=3.12"
+license = "MIT"
+keywords = ["ML", "Cat flap", "IoT"]
+authors = [
+    { name = "Paul Bichl", email = "pbichl25@student.aau.dk" },
+    { name = "Isabel Thorson", email = "isabel.e.thorsen@gmail.com" },
+    { name = "Alfred Mikkelsen", email = "alfr0424@gmail.com" },
+    { name = "Joud Al Hammound", email = "Joudalhammoud@gmail.com" },
+]
+
+[project.optional-dependencies]
+# dependencies for development, not for production
+dev = [
+    # test
+    "pytest",
+    "pytest-timeout",
+    "pytest-mock",
+    "pytest-cov",  # Coverage measurement
+    # lint => cool shit
+    "pre-commit",
+    "ruff",  # code formatter and linter
+    "mypy",  # static type checking
+]
+
+[project.urls]
+Documentation = "https://github.com/PaulBichl/roxy#readme"
+Issues = "https://github.com/PaulBichl/roxy/issues"
+Source = "https://github.com/PaulBichl/roxy"
+
+[tool.hatch.version]
+path = "src/roxy/__about__.py"
+
+[tool.coverage.run] # never tried that before, hope it works
+source_pkgs = ["roxy", "tests"]
+branch = true
+parallel = true
+omit = [
+  "src/roxy/__about__.py",
+]
+
+[tool.coverage.paths]
+roxy = ["src/roxy", "*/roxy/src/roxy"]
+tests = ["tests", "*/roxy/tests"]
+
+[tool.coverage.report]
+exclude_lines = [
+  "no cov",
+  "if __name__ == .__main__.:",
+  "if TYPE_CHECKING:",
+]
+
+
+###########################################
+# Tool specific configurations comes here #
+###########################################
+
+#########
+# Hatch #
+#########
+[tool.hatch]
+# hatch doc https://hatch.pypa.io
+# Why Hatch? -> Why not? -> https://hatch.pypa.io/latest/why/
+
+[tool.hatch.envs.hatch-uv] # we use uv as installer, fast as hell
+dependencies = [
+  "uv>=0.6.16",
+]
+
+# https://hatch.pypa.io/latest/config/environment/overview/
+[tool.hatch.envs.default]
+installer = "uv"
+python = "3.12"  # Specifies the Python version for the default development environment
+features = ["dev"]
+dependencies = [ # add your production dependencies here
+    "numpy",
+    "pandas",
+    "scikit-learn",
+    "matplotlib",
+    "ipykernel",
+]
+
+# https://hatch.pypa.io/latest/config/environment/overview/#scripts
+[tool.hatch.envs.default.scripts]
+# Runs all tests
+test = [
+    """python -c "from pathlib import Path;Path('.tmp').mkdir(parents=True, exist_ok=True)" """,
+    "pytest --basetemp=.tmp/pytest {args}",
+]
+
+# Cleans files that are ignored by Git
+clean = [
+    "git clean -ffX .tmp",  # Temporary files from testing
+    "git clean -fX .coverage*",
+    "git clean -fX src/**/version.py",
+]
+
+# Runs mypy -> do not run globally, because it is slow
+type = "mypy --install-types --non-interactive src {args}"
+
+# Runs ruff without auto-fixes
+style = "ruff check {args:.}"
+
+# Runs pre-commit (includes ruff with auto-fixes and other stuff) on all files
+fix = [
+    "pre-commit install",
+    "pre-commit run {args:--all-files}",
+]
+
+# Updates all pre-commit hooks to the latest revision (see .pre-commit-config) and installs them
+update-precommit = [
+    "pre-commit autoupdate --freeze",
+    "pre-commit install",
+]
+
+[tool.hatch.envs.all]
+dev-mode = true  # local usage -> editable
+
+# https://hatch.pypa.io/latest/config/environment/advanced/#matrix
+[[tool.hatch.envs.all.matrix]]
+python = ["3.12"]
+
+[tool.hatch.envs.ciall]
+dev-mode = false  # CI usage -> non-editable (to make sure that the built package file is tested)
+
+[[tool.hatch.envs.ciall.matrix]]
+python = ["3.12"]
+
+# An environment for CI only to speed up env creation for certain jobs
+[tool.hatch.envs.ci]
+skip-install = true
+
+# To allow direct dependencies, e.g. from a git repo
+[tool.hatch.metadata]
+allow-direct-references = true
+
+
+########
+# Ruff #
+########
+[tool.ruff]
+# https://docs.astral.sh/ruff/settings
+target-version = "py312"
+line-length = 120
+fix = false  # Allow autofix for all enabled rules (when --fix) is provided.
+show-fixes = true
+unsafe-fixes = true
+
+[tool.ruff.lint]
+# https://docs.astral.sh/ruff/settings/#select
+select = [
+    "E", # pycodestyle errors
+    "W", # pycodestyle warnings
+    "F", # pyflakes
+    "I", # isort
+    "UP", # pyupgrade
+    "B", # bugbear
+    "C4", # flake8-comprehensions
+    "DTZ", # flake8-datetimez
+    "EM", # flake8-errmsg
+    "FA", # flake8-future-annotations
+    "PIE", # flake8-pie
+    "PT", # flake8-pytest-style
+    "RSE", # flake8-raise
+    "RET", # flake8-return
+    "SIM", # flake8-simplify
+    "TID252", # flake8-tidy-imports -> convert relative-imports
+    "TC", # flake8-type-checking
+    "PLE", # Pylint - errors
+    "PLW", # Pylint - warnings
+    "PLC", # Pylint - conventions
+    "RUF", # Ruff-specific rules
+    "NPY", # NumPy-specific rules
+    "N", # pep8-naming
+    "S", # security, no more plain text passwords 
+    "ANN", # flake8-annotations
+    "ICN", # flake8-implicit-str-concat
+    "FLY", # format string lint
+    "A", # flake8 shadowing builtins
+    "Q", # flake8 quotes, single vs double
+    "COM812", # flake8-commas, trailing commas
+    "RUF100", # unused noqa
+]
+
+# https://docs.astral.sh/ruff/settings/#ignore
+ignore = [ # currently the rules are quite strict
+    "DTZ005", # datetime without timezone argument
+    "E501",  # Line too long (> 120)
+    "E722",  # Do not use bare except
+    # "N806",  # Variable in function should be lowercase
+    # "N803",  # Argument name should be lowercase
+    # "N815",  # Variable name in class scope should not be mixedCase
+    # "N816",  # Variable name in global scope should not be mixedCase
+    "N999",  # Module name not following snake_case naming convention
+    "PLC0206",  # dictionary value usage without calling .items()
+    "PLW2901",  # loop variable overwritten
+    "RUF012",   # Mutable default values used
+]
+# https://docs.astral.sh/ruff/settings/#unfixable
+unfixable = []
+
+[tool.ruff.lint.isort]
+known-first-party = ["machine_learning_aau"]
+required-imports = ["from __future__ import annotations"]
+
+[tool.ruff.lint.flake8-tidy-imports]
+ban-relative-imports = "parents"
+
+[tool.ruff.lint.per-file-ignores]
+# Tests can use magic values, assertions, and relative imports
+"tests/*/" = ["PLR2004", "S101", "TID252"]
+"_init_.py" = ["F401"]
+"api.py" = ["F401"]
+
+
+##########
+# PyTest #
+##########
+# https://docs.pytest.org/en/stable/reference/customize.html#pyproject-toml
+[tool.pytest.ini_options]
+addopts = "--tb=short -ra -v"
+testpaths = [
+    "tests/unit",
+    "tests/integration",
+]
+
+
+########
+# MYPY #
+########
+# https://justincaustin.com/blog/mypy-tips-and-tricks/
+[tool.mypy] # TODO better configuration
+# disallow_any_generics = true
+# disallow_incomplete_defs = true
+# disallow_untyped_calls = true
+# disallow_untyped_decorators = true
+# disallow_untyped_defs = true
+follow_imports = "normal"
+ignore_missing_imports = true
+no_implicit_reexport = true
+show_error_codes = true
+show_error_context = true
+strict_equality = true
+strict_optional = true
+warn_redundant_casts = true
+warn_return_any = true
+warn_unused_ignores = true
