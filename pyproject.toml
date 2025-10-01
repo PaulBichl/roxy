@@ -188,6 +188,7 @@ select = [
     "Q", # flake8 quotes, single vs double
     "COM812", # flake8-commas, trailing commas
     "RUF100", # unused noqa
+    "FA", # flake8 from future import annotations
 ]
 
 # https://docs.astral.sh/ruff/settings/#ignore
@@ -207,10 +208,6 @@ ignore = [ # currently the rules are quite strict
 # https://docs.astral.sh/ruff/settings/#unfixable
 unfixable = []
 
-[tool.ruff.lint.isort]
-known-first-party = ["machine_learning_aau"]
-required-imports = ["from __future__ import annotations"]
-
 [tool.ruff.lint.flake8-tidy-imports]
 ban-relative-imports = "parents"
 
@@ -219,6 +216,7 @@ ban-relative-imports = "parents"
 "tests/*/" = ["PLR2004", "S101", "TID252"]
 "_init_.py" = ["F401"]
 "api.py" = ["F401"]
+"__about__.py" = ["F401"]
 
 
 ##########
