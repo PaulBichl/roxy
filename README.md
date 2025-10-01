@@ -13,6 +13,7 @@
   - [Required Tools](#required-tools)
   - [Project Setup](#project-setup)
   - [Useful Commands](#useful-commands)
+- [Code Style](#code-style)
 
 -----
 
@@ -77,3 +78,14 @@ pip install roxy
   ```sh
   hatch run fix
   ```
+
+-----
+
+## Code Style
+
+This project follows **PEP8** guidelines for Python code style.
+To check and auto-fix code style issues, run:
+
+```sh
+hatch run fix
+```
