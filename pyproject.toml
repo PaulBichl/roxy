@@ -180,7 +180,7 @@ select = [
     "RUF", # Ruff-specific rules
     "NPY", # NumPy-specific rules
     "N", # pep8-naming
-    "S", # security, no more plain text passwords 
+    "S", # security, no more plain text passwords
     "ANN", # flake8-annotations
     "ICN", # flake8-implicit-str-concat
     "FLY", # format string lint
