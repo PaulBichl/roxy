@@ -1,5 +1,6 @@
 from http.server import BaseHTTPRequestHandler, HTTPServer
 import logging
+from pathlib import Path # 1. Import the Path object
 
 class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
     def do_POST(self):
@@ -9,15 +10,18 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
             # Read the posted data
             post_data = self.rfile.read(content_length)
 
-            # Save image to file
-            with open("received_image.jpg", "wb") as f:
+            # 2. Construct the full path in the home directory 🏠
+            file_path = Path.home() / "received_image.jpg"
+
+            # Save image to the specified path
+            with open("/tmp/received_image.jpg", "wb") as f:
                 f.write(post_data)
 
             # Send response
             self.send_response(200)
             self.end_headers()
             self.wfile.write(b"Image received successfully")
-            logging.info(f"Saved {content_length} bytes to received_image.jpg")
+            logging.info(f"Saved {content_length} bytes to {file_path}")
 
         except Exception as e:
             logging.exception("Error processing POST")
