@@ -15,7 +15,8 @@ IMAGE_PATH = "/tmp/motion.jpg"
 
 # === CAMERA SETUP ===
 picam2 = Picamera2()
-config = picam2.create_still_configuration(main={"size": (640, 480)})
+# Use a much higher resolution for the saved image
+config = picam2.create_still_configuration(main={"size": (1920, 1080)})
 picam2.configure(config)
 picam2.start()
 time.sleep(2)  # allow camera to stabilize
@@ -39,11 +40,30 @@ def send_to_discord(image_path):
 
 
 def capture_grayscale_image():
-    """Capture and save a grayscale image."""
+    """Capture, enhance, and save a grayscale image."""
+    print("📸 Capturing high-quality image...")
+    # Capture a full-resolution color image first
     frame = picam2.capture_array()
+    
+    # Convert to grayscale for processing
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    cv2.imwrite(IMAGE_PATH, gray)
-    print(f"📷 Captured grayscale image at {IMAGE_PATH}")
+
+    # === Simplified Enhancement ===
+    # 1. (Optional) Use CLAHE for better contrast, especially in mixed lighting.
+    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+    enhanced_gray = clahe.apply(gray)
+    
+    # Save the improved grayscale image
+    cv2.imwrite(IMAGE_PATH, enhanced_gray)
+
+    # --- For a COLOR image instead, uncomment these lines ---
+    # color_filename = "/tmp/motion_color.jpg"
+    # cv2.imwrite(color_filename, frame)
+    # send_to_discord(color_filename)
+    # print(f"✅ Captured + sent COLOR image to Discord")
+    # return # Exit early if sending color
+
+    print(f"✅ Captured + enhanced grayscale image at {IMAGE_PATH}")
     send_to_discord(IMAGE_PATH)
 
 
