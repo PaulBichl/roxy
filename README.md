@@ -37,6 +37,8 @@ pip install roxy
 
 - [Hatch](https://hatch.pypa.io/latest/install/#command-line-installer_1)
 
+- after installation run: hatch config set dirs.env.virtual .hatch
+
 ### Project Setup
 
 1. **Install dependencies and create your environment:**
