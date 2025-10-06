@@ -18,17 +18,16 @@ picam2 = Picamera2()
 config = picam2.create_still_configuration(main={"size": (640, 480)})
 picam2.configure(config)
 picam2.start()
-time.sleep(2)  # warm-up
+time.sleep(2)  # allow camera to stabilize
 
-# === GLOBAL STATE ===
+# === STATE VARIABLES ===
 last_capture_time = 0
 last_brightness = None
-stable_frames = 0
 last_exposure_change = 0
 
 
 def send_to_discord(image_path):
-    """Upload a captured image to the configured Discord webhook."""
+    """Send an image to the Discord webhook."""
     with open(image_path, "rb") as f:
         files = {"file": f}
         data = {"content": f"📸 Motion detected at {datetime.now().strftime('%H:%M:%S')}"}
@@ -39,18 +38,19 @@ def send_to_discord(image_path):
             print(f"⚠️ Discord upload failed: {e}")
 
 
-def capture_image():
-    """Capture and save a still image."""
-    picam2.capture_file(IMAGE_PATH)
-    print(f"📷 Captured {IMAGE_PATH}")
+def capture_grayscale_image():
+    """Capture and save a grayscale image."""
+    frame = picam2.capture_array()
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    cv2.imwrite(IMAGE_PATH, gray)
+    print(f"📷 Captured grayscale image at {IMAGE_PATH}")
     send_to_discord(IMAGE_PATH)
 
 
-def adjust_exposure(frame):
-    """Hybrid exposure control — automatic in daylight, manual in darkness."""
-    global last_brightness, stable_frames, last_exposure_change
-
-    brightness = frame.mean()
+def adjust_exposure(gray_frame):
+    """Adaptive exposure: auto in bright conditions, manual in low light."""
+    global last_brightness, last_exposure_change
+    brightness = gray_frame.mean()
     now = time.time()
 
     if last_brightness is None:
@@ -59,21 +59,19 @@ def adjust_exposure(frame):
 
     diff = abs(brightness - last_brightness)
 
-    # Only reconsider exposure if lighting changed significantly
+    # Re-adjust only if brightness changed significantly
     if diff > 60 and now - last_exposure_change > 15:
         print(f"💡 Adjusting exposure (brightness {brightness:.1f})")
-        stable_frames = 0
         last_exposure_change = now
 
-        if brightness < 50:  # Dark → manual low-light mode
+        if brightness < 50:  # dark
             picam2.set_controls({
                 "AeEnable": False,
-                "ExposureTime": 40000,  # 1/25 s
+                "ExposureTime": 40000,
                 "AnalogueGain": 6.0
             })
             print("🌙 Manual low-light mode")
-
-        else:  # Normal or bright → auto exposure
+        else:  # bright
             picam2.set_controls({
                 "AeEnable": True,
                 "AwbEnable": True
@@ -82,14 +80,11 @@ def adjust_exposure(frame):
 
         time.sleep(1.5)
 
-    else:
-        stable_frames += 1
-
     last_brightness = brightness
 
 
 def detect_motion():
-    """Main loop: monitor frames for motion and brightness changes."""
+    """Continuously capture frames and detect motion in grayscale."""
     global last_capture_time
     prev_frame = None
 
@@ -114,7 +109,7 @@ def detect_motion():
         if motion_detected:
             now = time.time()
             if now - last_capture_time > CAPTURE_INTERVAL:
-                capture_image()
+                capture_grayscale_image()
                 last_capture_time = now
 
         prev_frame = gray
@@ -122,5 +117,5 @@ def detect_motion():
 
 
 if __name__ == "__main__":
-    print("🚀 Motion detector with auto day/night exposure started...")
+    print("🚀 Motion detector (grayscale, auto exposure) started...")
     detect_motion()
