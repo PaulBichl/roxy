@@ -30,8 +30,11 @@ CAPTURE_INTERVAL = float(os.environ.get("CAPTURE_INTERVAL", 5.0))
 IMAGE_PATH = os.environ.get("IMAGE_PATH", "/tmp/motion.jpg")
 SUN_CHECK_INTERVAL = float(os.environ.get("SUN_CHECK_INTERVAL", 600.0))  # seconds
 
+# New: set to "1" to indicate NoIR / IR-capable camera module
+CAMERA_NOIR = os.environ.get("CAMERA_NOIR", "0") == "1"
+
 # Camera still size (full-res)
-FULL_RES = (1920, 1080)
+FULL_RES = (640, 480)   
 
 # Logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s: %(message)s")
@@ -87,14 +90,27 @@ def Camera_setup(is_daytime_flag):
         try:
             if is_daytime_flag:
                 logger.info("Camera mode: Day")
-                picam2.set_controls({
-                    "AeEnable": False, "ExposureTime": 500, "AnalogueGain": 1.0
-                })
+                # Day settings: keep AWB on for color cameras; for NoIR daytime AWB usually OK
+                if CAMERA_NOIR:
+                    # NoIR in daylight - keep AWB but reduce exposure/gain
+                    picam2.set_controls({
+                        "AeEnable": True, "ExposureTime": 2000, "AnalogueGain": 1.5, "AwbEnable": True
+                    })
+                else:
+                    picam2.set_controls({
+                        "AeEnable": True, "ExposureTime": 1000, "AnalogueGain": 1.0, "AwbEnable": True
+                    })
             else:
                 logger.info("Camera mode: Night")
-                picam2.set_controls({
-                    "AeEnable": False, "ExposureTime": 16000, "AnalogueGain": 6.0
-                })
+                # Night settings: disable AWB for IR and increase exposure/gain
+                if CAMERA_NOIR:
+                    picam2.set_controls({
+                        "AeEnable": False, "ExposureTime": 20000, "AnalogueGain": 8.0, "AwbEnable": False
+                    })
+                else:
+                    picam2.set_controls({
+                        "AeEnable": False, "ExposureTime": 16000, "AnalogueGain": 6.0, "AwbEnable": False
+                    })
         except Exception as e:
             logger.debug("Failed to set Picamera2 controls: %s", e)
     else:
@@ -200,10 +216,17 @@ def motion_detection_loop():
 
             if motion_detected and (time.monotonic() - last_capture_time) >= CAPTURE_INTERVAL:
                 try:
-                    # Convert full-res RGB -> BGR for OpenCV saving
-                    full_bgr = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
-                    cv2.imwrite(IMAGE_PATH, full_bgr)
-                    logger.info("Motion detected. Image saved to %s", IMAGE_PATH)
+                    # Convert full-res RGB to grayscale and save.
+                    # For IR (NoIR) nighttime captures apply histogram equalization to improve contrast.
+                    gray_full = cv2.cvtColor(frame, cv2.COLOR_RGB2GRAY)
+                    if CAMERA_NOIR and not is_daytime:
+                        try:
+                            gray_full = cv2.equalizeHist(gray_full)
+                        except Exception:
+                            # If equalizeHist fails, continue with raw gray image
+                            pass
+                    cv2.imwrite(IMAGE_PATH, gray_full)
+                    logger.info("Motion detected. Grayscale image saved to %s", IMAGE_PATH)
                     send_discord(IMAGE_PATH)
                 except Exception as e:
                     logger.warning("Error saving/sending image: %s", e)
