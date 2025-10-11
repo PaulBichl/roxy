@@ -10,7 +10,7 @@ import suntime
 # === CONFIGURATION ===
 DISCORD_WEBHOOK = "https://discord.com/api/webhooks/1424760641645973524/YY--RI5wcTTlJhrG6yptX-bFKo0HwJX-kn-oPTa-ilMZ6B89T16htSNH_7KOshT7Zm-O"  # 👈 replace with yours
 MOTION_THRESHOLD = 25
-MIN_AREA = 500
+MIN_AREA = 1000
 CAPTURE_INTERVAL = 3  # seconds between motion triggers
 IMAGE_PATH = "/tmp/motion.jpg"
 
@@ -86,7 +86,7 @@ def captureGrayscaleImage():
 
 # === STARTUP CAPTURE ===
 print("📷 Taking startup image...")
-changeExposure()
+#changeExposure()
 startup_image = captureGrayscaleImage()
 sendToDiscord(startup_image, startup=True)
 print("✅ Startup image sent. Starting motion detection...")
@@ -114,7 +114,7 @@ while True:
         break
 
     if motion_detected and (time.time() - last_capture_time > CAPTURE_INTERVAL):
-        changeExposure()
+     #changeExposure()
         print("⚠️ Motion detected!")
         image_path = captureGrayscaleImage()
         sendToDiscord(image_path)
