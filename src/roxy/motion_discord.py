@@ -4,9 +4,10 @@ import numpy as np
 import time
 import requests
 from picamera2 import Picamera2
-from datetime import datetime
+from datetime import datetime, timedelta
+import suntime 
 
-# === CONFIG ===
+# === CONFIGURATION ===
 DISCORD_WEBHOOK = "https://discord.com/api/webhooks/1424760641645973524/YY--RI5wcTTlJhrG6yptX-bFKo0HwJX-kn-oPTa-ilMZ6B89T16htSNH_7KOshT7Zm-O"  # 👈 replace with yours
 MOTION_THRESHOLD = 25
 MIN_AREA = 500
@@ -15,127 +16,109 @@ IMAGE_PATH = "/tmp/motion.jpg"
 
 # === CAMERA SETUP ===
 picam2 = Picamera2()
-# Use a much higher resolution for the saved image
-config = picam2.create_still_configuration(main={"size": (1920, 1080)})
+config = picam2.create_still_configuration(main={"size": (1280, 960)})
 picam2.configure(config)
 picam2.start()
 time.sleep(2)  # allow camera to stabilize
 
-# === STATE VARIABLES ===
+#setup sun times
+latitude = 55.745833  # replace with your latitude
+longitude = 12.331283  # replace with your longitude
+sun = suntime.Sun(latitude, longitude)
+
+# === STATE ===
+last_frame = None
 last_capture_time = 0
-last_brightness = None
-last_exposure_change = 0
 
 
-def send_to_discord(image_path):
+def sendToDiscord(image_path, startup=False):
     """Send an image to the Discord webhook."""
     with open(image_path, "rb") as f:
         files = {"file": f}
-        data = {"content": f"📸 Motion detected at {datetime.now().strftime('%H:%M:%S')}"}
+        label = "📸 Startup image" if startup else f"📸 Motion detected at {datetime.now().strftime('%H:%M:%S')}"
+        data = {"content": label}
         try:
             requests.post(DISCORD_WEBHOOK, data=data, files=files, timeout=10)
-            print("✅ Sent image to Discord")
+            print("✅ Image sent to Discord")
         except Exception as e:
-            print(f"⚠️ Discord upload failed: {e}")
+            print(f"❌ Discord upload failed: {e}")
 
+def changeExposure():
+    sunRise = sun.get_sunrise_time().replace(tzinfo=None) 
+    sunRise = sunRise + timedelta(hours=2)
+    print( "Sunrise is at:", sunRise)
+    sunSet = sun.get_sunset_time().replace(tzinfo=None)
+    sunSet = sunSet + timedelta(hours=2)
+    print( "Sunset is at:", sunSet)
+    now = datetime.now()
+    mode = "unknown"
 
-def capture_grayscale_image():
-    """Capture, enhance, and save a grayscale image."""
-    print("📸 Capturing high-quality image...")
-    # Capture a full-resolution color image first
+    if sunRise < now < sunSet:
+        picam2.set_controls({
+                        "AeEnable": False,
+                        "ExposureTime": 3500,   
+                        "AnalogueGain": 1.0,    
+                        "AwbEnable": False
+                    })
+        mode = "day"
+        print("Daytime exposure set")
+
+    else:
+        picam2.set_controls({
+                        "AeEnable": False,
+                        "ExposureTime": 30000,   
+                        "AnalogueGain": 4.0,    
+                        "AwbEnable": False
+                    })
+        mode = "night"
+        print("Nighttime exposure set")
+    
+    print(f"Current time: {now}, Mode: {mode}")
+    
+
+def captureGrayscaleImage():
+    """Capture and save a grayscale image."""
     frame = picam2.capture_array()
-    
-    # Convert to grayscale for processing
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-
-    # === Simplified Enhancement ===
-    # 1. (Optional) Use CLAHE for better contrast, especially in mixed lighting.
-    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
-    enhanced_gray = clahe.apply(gray)
-    
-    # Save the improved grayscale image
-    cv2.imwrite(IMAGE_PATH, enhanced_gray)
-
-    # --- For a COLOR image instead, uncomment these lines ---
-    # color_filename = "/tmp/motion_color.jpg"
-    # cv2.imwrite(color_filename, frame)
-    # send_to_discord(color_filename)
-    # print(f"✅ Captured + sent COLOR image to Discord")
-    # return # Exit early if sending color
-
-    print(f"✅ Captured + enhanced grayscale image at {IMAGE_PATH}")
-    send_to_discord(IMAGE_PATH)
+    cv2.imwrite(IMAGE_PATH, gray)
+    return IMAGE_PATH
 
 
-def adjust_exposure(gray_frame):
-    """Adaptive exposure: auto in bright conditions, manual in low light."""
-    global last_brightness, last_exposure_change
-    brightness = gray_frame.mean()
-    now = time.time()
+# === STARTUP CAPTURE ===
+print("📷 Taking startup image...")
+changeExposure()
+startup_image = captureGrayscaleImage()
+sendToDiscord(startup_image, startup=True)
+print("✅ Startup image sent. Starting motion detection...")
 
-    if last_brightness is None:
-        last_brightness = brightness
-        return
+# === MAIN LOOP ===
+while True:
+    frame = picam2.capture_array()
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    gray = cv2.GaussianBlur(gray, (21, 21), 0)
 
-    diff = abs(brightness - last_brightness)
+    if last_frame is None:
+        last_frame = gray
+        continue
 
-    # Re-adjust only if brightness changed significantly
-    if diff > 60 and now - last_exposure_change > 15:
-        print(f"💡 Adjusting exposure (brightness {brightness:.1f})")
-        last_exposure_change = now
+    frame_delta = cv2.absdiff(last_frame, gray)
+    thresh = cv2.threshold(frame_delta, MOTION_THRESHOLD, 255, cv2.THRESH_BINARY)[1]
+    thresh = cv2.dilate(thresh, None, iterations=2)
+    contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-        if brightness < 50:  # dark
-            picam2.set_controls({
-                "AeEnable": False,
-                "ExposureTime": 40000,
-                "AnalogueGain": 6.0
-            })
-            print("🌙 Manual low-light mode")
-        else:  # bright
-            picam2.set_controls({
-                "AeEnable": True,
-                "AwbEnable": True
-            })
-            print("☀️ Auto-exposure mode")
-
-        time.sleep(1.5)
-
-    last_brightness = brightness
-
-
-def detect_motion():
-    """Continuously capture frames and detect motion in grayscale."""
-    global last_capture_time
-    prev_frame = None
-
-    while True:
-        frame = picam2.capture_array()
-        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        gray = cv2.GaussianBlur(gray, (21, 21), 0)
-
-        adjust_exposure(gray)
-
-        if prev_frame is None:
-            prev_frame = gray
+    motion_detected = False
+    for contour in contours:
+        if cv2.contourArea(contour) < MIN_AREA:
             continue
+        motion_detected = True
+        break
 
-        frame_delta = cv2.absdiff(prev_frame, gray)
-        thresh = cv2.threshold(frame_delta, MOTION_THRESHOLD, 255, cv2.THRESH_BINARY)[1]
-        thresh = cv2.dilate(thresh, None, iterations=2)
-        contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    if motion_detected and (time.time() - last_capture_time > CAPTURE_INTERVAL):
+        changeExposure()
+        print("⚠️ Motion detected!")
+        image_path = captureGrayscaleImage()
+        sendToDiscord(image_path)
+        last_capture_time = time.time()
 
-        motion_detected = any(cv2.contourArea(c) > MIN_AREA for c in contours)
-
-        if motion_detected:
-            now = time.time()
-            if now - last_capture_time > CAPTURE_INTERVAL:
-                capture_grayscale_image()
-                last_capture_time = now
-
-        prev_frame = gray
-        time.sleep(0.3)
-
-
-if __name__ == "__main__":
-    print("🚀 Motion detector (grayscale, auto exposure) started...")
-    detect_motion()
+    last_frame = gray
+    time.sleep(0.5)
