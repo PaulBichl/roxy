@@ -86,6 +86,8 @@ dependencies = [ # add your production dependencies here
     "scikit-learn",
     "matplotlib",
     "ipykernel",
+    "roboflow", # ML stuff
+    "ultralytics",
 ]
 
 # https://hatch.pypa.io/latest/config/environment/overview/#scripts
