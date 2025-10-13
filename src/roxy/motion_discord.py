@@ -16,7 +16,7 @@ IMAGE_PATH = "/tmp/motion.jpg"
 
 # === CAMERA SETUP ===
 picam2 = Picamera2()
-config = picam2.create_still_configuration(main={"size": (1280, 960)})
+config = picam2.create_still_configuration(main={"size": (1280, 1280)})
 picam2.configure(config)
 picam2.start()
 time.sleep(2)  # allow camera to stabilize
