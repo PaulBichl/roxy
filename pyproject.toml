@@ -88,6 +88,7 @@ dependencies = [ # add your production dependencies here
     "ipykernel",
     "roboflow", # ML stuff
     "ultralytics",
+    "onnx",
 ]
 
 # https://hatch.pypa.io/latest/config/environment/overview/#scripts
