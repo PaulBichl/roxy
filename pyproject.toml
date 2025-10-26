@@ -89,6 +89,9 @@ dependencies = [ # add your production dependencies here
     "roboflow", # ML stuff
     "ultralytics",
     "onnx",
+    "scikit-image",
+    "opencv-python",
+    "joblib",
 ]
 
 # https://hatch.pypa.io/latest/config/environment/overview/#scripts
@@ -207,6 +210,8 @@ ignore = [ # currently the rules are quite strict
     "PLC0206",  # dictionary value usage without calling .items()
     "PLW2901",  # loop variable overwritten
     "RUF012",   # Mutable default values used
+    "ANN001",  # Missing type annotation
+    "B007",  # Loop control variable not used within the loop body
 ]
 # https://docs.astral.sh/ruff/settings/#unfixable
 unfixable = []
