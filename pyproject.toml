@@ -92,7 +92,7 @@ dependencies = [ # add your production dependencies here
     "scikit-image",
     "opencv-python",
     "joblib",
-    "gdown",
+    "pydrive",
 ]
 
 # https://hatch.pypa.io/latest/config/environment/overview/#scripts
