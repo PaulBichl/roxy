@@ -250,7 +250,7 @@
   //  - Your computer and the Pi must be on the same LAN.
   //  - You do NOT use "localhost" here, because inside the container
   //    "localhost" refers to the container itself, not the Pi host.
-  const BACKEND_BASE = "http://192.168.1.42:5000"; //PUT PI'S IP + PORT HERE
+  const BACKEND_BASE = "http://"; //PUT PI'S IP + PORT HERE
 
   const $ = (q) => document.querySelector(q);
   const statusEl = $("#status");
