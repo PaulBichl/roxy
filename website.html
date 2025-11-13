@@ -1,0 +1,374 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>System Control Panel</title>
+  <style>
+    :root {
+      --bg: #0f1115; --card: #171924; --text: #eaeef5; --muted: #a8b3cf;
+      --accent: #6ea8fe; --accent-2: #85e0ae; --danger: #ff6b6b; --border: #222536;
+      --ring: rgba(110,168,254,.35); --shadow: 0 10px 30px rgba(0,0,0,.35);
+      --radius: 16px; --gap: 14px; --fs-base: clamp(17px, 2vw, 18px);
+      --fs-h1: clamp(22px, 3vw, 28px); --fs-sm: clamp(13px, 1.8vw, 14px);
+      --btn-h: 48px; --field-h: 48px; --w: min(760px, 92vw);
+    }
+    @media (prefers-color-scheme: light){
+      :root { --bg:#f6f7fb; --card:#ffffff; --text:#0f1220; --muted:#5d6a85; --border:#e7e9f3; --shadow:0 10px 30px rgba(20,20,40,.08); --ring: rgba(51,96,255,.22); }
+    }
+    *{box-sizing:border-box} html,body{height:100%}
+    html { transition: background-color 0.3s ease, color 0.3s ease; }
+    body{
+      margin:0; background: radial-gradient(1200px 800px at 50% -10%, rgba(110,168,254,.12), transparent 60%) , var(--bg);
+      color:var(--text); font: 400 16px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+      display:grid; place-items:center; padding:24px;
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+    /* Theme classes - Night (dark) and Day (light) modes */
+    html[data-theme="light"] {
+      --bg:#f6f7fb; --card:#ffffff; --text:#0f1220; --muted:#5d6a85; --border:#e7e9f3;
+      --shadow:0 10px 30px rgba(20,20,40,.08); --ring: rgba(51,96,255,.22);
+    }
+    html[data-theme="dark"] {
+      --bg: #0f1115; --card: #171924; --text: #eaeef5; --muted: #a8b3cf;
+      --border: #222536; --ring: rgba(110,168,254,.35); --shadow: 0 10px 30px rgba(0,0,0,.35);
+    }
+
+    .stack { display:grid; gap:18px; width:var(--w); }
+
+    .card{
+      background:var(--card); border:1px solid var(--border);
+      border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden;
+      backdrop-filter: blur(6px);
+      transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+    }
+    .header{
+      padding:20px 22px; border-bottom:1px solid var(--border);
+      display:flex; justify-content:space-between; align-items:flex-start;
+      transition: border-color 0.3s ease;
+      position:relative;
+    }
+    .header > div { flex:1; }
+    .title{ font-weight:700; font-size:var(--fs-h1); }
+    .subtitle{ color:var(--muted); font-size:var(--fs-sm) }
+
+    /* Theme switcher */
+    .theme-switcher {
+      position:absolute;
+      top:16px;
+      right:16px;
+      display:flex; align-items:center; justify-content:center;
+      padding:4px 8px; border-radius:4px;
+      background:var(--card); border:1px solid var(--border);
+      cursor:pointer; user-select:none;
+      transition: background-color 0.3s ease, border-color 0.3s ease;
+      font-size:11px; color:var(--text);
+      font-weight:500; min-width:45px;
+      line-height:1.2;
+    }
+    .theme-switcher span {
+      font-size:11px; color:var(--text);
+      font-weight:500; transition: color 0.3s ease;
+    }
+
+    .content{ padding:22px; display:grid; gap:var(--gap) }
+    .row{ display:grid; gap:8px }
+    label{
+      color:var(--muted); font-size:var(--fs-sm);
+      transition: color 0.3s ease;
+    }
+    input{
+      height:var(--field-h); width:100%; padding:0 14px; font-size:var(--fs-base);
+      color:var(--text); background:transparent; border:1px solid var(--border); border-radius:12px; outline:none;
+      transition:border-color 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease, color 0.3s ease;
+    }
+    input:focus{ border-color:var(--accent); box-shadow: 0 0 0 6px var(--ring) }
+
+    .grid{ display:grid; gap:var(--gap); grid-template-columns: 1fr }
+    @media (min-width:720px){ .grid{ grid-template-columns: 1fr 1fr } }
+
+    .actions-inline{ display:flex; flex-wrap:wrap; gap:10px; margin-top:2px }
+    .btn{
+      height:var(--btn-h); padding:0 16px; border:1px solid var(--border);
+      background:#0b1220; color:#eaf2ff; border-radius:12px; cursor:pointer;
+      font-weight:600; font-size:15px;
+      transition: transform .05s, box-shadow 0.3s ease, background 0.3s ease, opacity 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+      display:inline-flex; align-items:center; justify-content:center;
+    }
+    .btn:active{ transform:translateY(1px) }
+    .btn.primary{ background:linear-gradient(135deg, var(--accent), #3a6cf6); border-color:transparent }
+    .btn.ghost{ background:transparent; color:var(--muted) }
+    .btn.success{ background:linear-gradient(135deg, var(--accent-2), #3bc87a); border-color:transparent; color:#0c1b12 }
+    .btn.danger{ background:linear-gradient(135deg, var(--danger), #ff3b3b); border-color:transparent }
+    .btn:disabled{ opacity:0.6; cursor:not-allowed; pointer-events:none }
+
+    .status{
+      margin-top:4px; padding:14px; border-top:1px dashed var(--border);
+      color:var(--muted); font-size:var(--fs-sm); display:flex; align-items:center; gap:10px;
+      transition: border-color 0.3s ease, color 0.3s ease;
+    }
+    .dot{
+      width:8px; height:8px; border-radius:50%; background:var(--muted);
+      transition: background-color 0.3s ease;
+    }
+    .ok .dot{ background:#3bc87a } .err .dot{ background:var(--danger) }
+
+    .controls-list{ display:grid; gap:10px; padding:16px 22px 22px }
+    .controls-list .item{
+      display:flex; align-items:center; justify-content:space-between; gap:14px;
+      padding:12px; border:1px solid var(--border); border-radius:12px; background:rgba(0,0,0,.06);
+      transition: border-color 0.3s ease, background-color 0.3s ease;
+    }
+    .status-dot {
+      width:8px; height:8px; border-radius:50%;
+      background:var(--muted); transition: background-color 0.3s ease;
+      flex-shrink:0;
+    }
+    .status-dot.running { background:#3bc87a; }
+    .status-dot.stopped { background:var(--danger); }
+    .status-dot.unknown { background:var(--muted); }
+    .status-item {
+      padding:10px 12px !important;
+    }
+    .status-item > div {
+      width:100%;
+    }
+    .controls-list h3{
+      margin:0; font-size:16px;
+      transition: color 0.3s ease;
+    }
+    .controls-list p{
+      margin:2px 0 0; color:var(--muted); font-size:var(--fs-sm);
+      transition: color 0.3s ease;
+    }
+     </style>
+</head>
+<body>
+
+  <div class="stack">
+    <main class="card" role="main" aria-labelledby="h1">
+      <header class="header">
+        <div>
+          <div id="h1" class="title">Configuration Panel</div>
+          <div class="subtitle">Manage configuration for the system</div>
+        </div>
+        <div class="theme-switcher" id="theme-switcher" title="Toggle theme">
+          <span id="theme-text">Dark</span>
+        </div>
+      </header>
+
+      <section class="content">
+        <form id="form" class="grid" novalidate>
+          <div class="row" style="grid-column:1 / -1">
+            <label for="webhook">Discord Webhook</label>
+            <input id="webhook" name="discord_webhook" type="url" inputmode="url"
+                   placeholder="https://discord.com/api/webhooks/..."
+                   value="{{ data.get('discord_webhook','') if data else '' }}" required>
+          </div>
+
+          <div class="row">
+            <label for="interval">Capture Interval (seconds)</label>
+            <input id="interval" name="capture_interval" type="text" inputmode="numeric"
+                   placeholder="e.g., 5"
+                   value="{{ data.get('capture_interval', 5) if data else 5 }}">
+          </div>
+
+          <div class="row">
+             <label for="remoteip">Remote Server IP (Pi 5)</label>
+            <input id="remoteip" name="remote_server_ip" type="text" inputmode="numeric"
+                   placeholder="e.g., 192.168.1.1"
+                   value="{{ data.get('remote_server_ip','') if data else '' }}">
+          </div>
+
+          <div class="actions-inline" style="grid-column:1 / -1">
+            <button type="button" class="btn primary" id="btn-update">Update</button>
+            <button type="button" class="btn ghost" id="btn-reset">Reset</button>
+          </div>
+        </form>
+
+        <div id="status" class="status" aria-live="polite">
+          <span class="dot"></span>
+          <span id="status-msg">Ready.</span>
+        </div>
+      </section>
+    </main>
+
+    <aside class="card" aria-labelledby="controls-title">
+      <header class="header">
+        <div>
+          <div class="title" id="controls-title">Controls</div>
+          <div class="subtitle">Start/Stop the system</div>
+        </div>
+      </header>
+
+      <div class="controls-list">
+        <!-- Service Status -->
+        <div class="item status-item">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span class="status-dot" id="service-status-dot"></span>
+            <span id="service-status-text">Checking...</span>
+            </div>
+        </div>
+
+        <div class="item">
+          <div>
+            <h3>Start Service</h3>
+            <p>Begin the motion/stream service on the device.</p>
+          </div>
+          <button type="button" class="btn success" id="btn-start">Start</button>
+        </div>
+
+        <div class="item">
+          <div>
+            <h3>Stop Service</h3>
+            <p>Gracefully stop the running service.</p>
+          </div>
+          <button type="button" class="btn danger" id="btn-stop">Stop</button>
+        </div>
+
+        <div class="item">
+          <div>
+            <h3>Lock/Unlock</h3>
+            <p>Locks and unlocks the cat flap</p>
+          </div>
+          <button type="button" class="btn success" id="btn-lock-toggle" data-state="locked">Lock</button>
+        </div>
+
+    </div>
+    </aside>
+  </div>
+
+  <script>
+    const $ = (q) => document.querySelector(q);
+    const statusEl = $("#status");
+    const statusMsg = $("#status-msg");
+
+    function setStatus(ok, msg) {
+      statusEl.classList.remove("ok", "err");
+      statusEl.classList.add(ok ? "ok" : "err");
+      statusMsg.textContent = msg;
+    }
+     // Update button handler
+    async function updateSettings() {
+      const btn = $("#btn-update");
+      btn.disabled = true;
+
+      try {
+        const form = $("#form");
+        const formData = new FormData(form);
+        const data = Object.fromEntries(formData);
+
+        const res = await fetch("/update", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data)
+        });
+
+        const json = await res.json();
+        if (res.ok) {
+          setStatus(true, "Settings updated successfully.");
+        } else {
+          setStatus(false, "Update failed");
+        }
+      } catch(e) {
+        setStatus(false, "Update failed");
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    $("#btn-update").addEventListener("click", updateSettings);
+
+    // Form submission (Enter key)
+    $("#form").addEventListener("submit", (e) => {
+      e.preventDefault();
+      updateSettings();
+    });
+
+    // Reset button
+    $("#btn-reset").addEventListener("click", () => {
+      $("#form").reset();
+      setStatus(true, "Form reset.");
+    });
+
+    // Start/Stop buttons
+    async function controlService(action) {
+      const btn = $(`#btn-${action}`);
+      btn.disabled = true;
+
+      try {
+        const res = await fetch(`/${action}`, { method: "POST" });
+        const json = await res.json();
+        setStatus(true, `${action === "start" ? "Started" : "Stopped"}`);
+        setTimeout(updateServiceStatus, 1000);
+      } catch(e) {
+        setStatus(false, `${action} failed`);
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    $("#btn-start").addEventListener("click", () => controlService("start"));
+    $("#btn-stop").addEventListener("click", () => controlService("stop"));
+     // Theme switcher
+    const themeSwitcher = $("#theme-switcher");
+    const themeText = $("#theme-text");
+    const html = document.documentElement;
+
+    const savedTheme = localStorage.getItem("theme") || "dark";
+    html.setAttribute("data-theme", savedTheme);
+    themeText.textContent = savedTheme === "light" ? "Light/Dark" : "Dark/Light";
+
+    themeSwitcher.addEventListener("click", () => {
+      const current = html.getAttribute("data-theme");
+      const newTheme = current === "dark" ? "light" : "dark";
+      html.setAttribute("data-theme", newTheme);
+      localStorage.setItem("theme", newTheme);
+      themeText.textContent = newTheme === "light" ? "Light/Dark" : "Dark/Light";
+    });
+
+    // Service status
+    const serviceStatusText = $("#service-status-text");
+    const serviceStatusDot = $("#service-status-dot");
+
+    async function updateServiceStatus() {
+      try {
+        const res = await fetch("/status");
+        const data = await res.json();
+
+        serviceStatusDot.className = "status-dot " + data.state;
+
+        if (data.state === "running") {
+          serviceStatusText.textContent = `Service Status: Running${data.uptime ? " - " + data.uptime : ""}`;
+        } else if (data.state === "stopped") {
+          serviceStatusText.textContent = "Service Status: Stopped";
+        } else {
+          serviceStatusText.textContent = "Service Status: Unknown";
+           }
+      } catch(e) {
+        serviceStatusDot.className = "status-dot unknown";
+        serviceStatusText.textContent = "Service Status: Error";
+      }
+    }
+
+    // Update status on load and every 5 seconds
+    updateServiceStatus();
+    setInterval(updateServiceStatus, 5000);
+
+    const lockToggleButton = document.getElementById("btn-lock-toggle");
+
+lockToggleButton.addEventListener("click", () => {
+  const currentState = lockToggleButton.getAttribute("data-state");
+
+  if (currentState === "locked") {
+    lockToggleButton.setAttribute("data-state", "unlocked");
+    lockToggleButton.textContent = "Lock";
+  } else {
+    lockToggleButton.setAttribute("data-state", "locked");
+    lockToggleButton.textContent = "Unlock";
+  }
+});
+  </script>
+</body>
+</html>
