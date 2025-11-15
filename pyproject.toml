@@ -93,6 +93,8 @@ dependencies = [ # add your production dependencies here
     "opencv-python",
     "joblib",
     "pydrive",
+    "opencv-python", # used for camera setup
+    "requests",
 ]
 
 # https://hatch.pypa.io/latest/config/environment/overview/#scripts
