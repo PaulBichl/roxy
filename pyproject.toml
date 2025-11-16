@@ -93,6 +93,7 @@ dependencies = [ # add your production dependencies here
     "opencv-python",
     "joblib",
     "pydrive",
+    "ncnn", # ncnn used for optimized model deployment
     "opencv-python", # used for camera setup
     "requests",
 ]
