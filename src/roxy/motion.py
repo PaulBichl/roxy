@@ -6,6 +6,9 @@ from datetime import datetime
 
 import cv2
 import requests
+from ultralytics import YOLO
+
+ncnn_model = YOLO("./tmp/models/model_ncnn_model")  # TODO thsi is not clean, refactor
 
 # === CONFIGURATION ===
 json_data = {}
@@ -36,11 +39,15 @@ print("📷 Initializing motion detection script for Day & Night...")
 
 
 # === FUNCTIONS ===
-def send_to_discord(image_path, startup=False) -> None:
+def send_to_discord(image_path, image_label="", startup=False) -> None:
     """Send an image to the Discord webhook."""
     with open(image_path, "rb") as f:
         files = {"file": f}
-        label = "🚀 Startup image" if startup else f"🚨 Motion detected at {datetime.now().strftime('%H:%M:%S')}"
+        label = (
+            "🚀 Startup image"
+            if startup
+            else f"🚨 Motion detected at {datetime.now().strftime('%H:%M:%S')}, class dedected: {image_label}"
+        )
         data = {"content": label}
         try:
             requests.post(DISCORD_WEBHOOK, data=data, files=files, timeout=10)
@@ -101,7 +108,17 @@ else:
     print("❌ Could not capture startup image. Exiting.")
     exit()
 
-# === MAIN LOOP ===
+
+def classify_image(image_path) -> str:
+    """
+    function which uses trained ML model to classify image
+    and returns the label as string
+    """
+    image = cv2.imread(image_path)
+    return ncnn_model(image)
+
+
+# === MAIN LOOP === TODO replace with main
 while True:
     frame = capture_frame()
 
@@ -130,5 +147,5 @@ while True:
 
     if motion_detected and (time.time() - last_capture_time > CAPTURE_INTERVAL):
         print(f"⚠️ Motion detected at {datetime.now().strftime('%H:%M:%S')}!")
-        send_to_discord(IMAGE_PATH)
+        send_to_discord(IMAGE_PATH, classify_image(IMAGE_PATH))
         last_capture_time = time.time()  #!/usr/bin/env python3
