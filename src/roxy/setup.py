@@ -11,6 +11,6 @@ output = "./tmp/models/model.pt"
 gdown.download(url, output, quiet=False)
 
 
-# modeel is stored as ./tmp/models/model.pt, convert to ncnn format => better performance on raspberry pi
+# model is stored as ./tmp/models/model.pt, convert to ncnn format => better performance on raspberry pi
 model = YOLO("./tmp/models/model.pt")
 model.export(format="ncnn")
