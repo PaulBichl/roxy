@@ -1,0 +1,5 @@
+gdown
+ultralytics
+opencv-python
+numpy
+requests
