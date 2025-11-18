@@ -5,7 +5,7 @@ import time
 from datetime import datetime
 
 import cv2
-import gpiod
+import gpiod  # gpio libary for raspberry pi, not in pyproject.toml, dont add
 import requests
 from ultralytics import YOLO
 
