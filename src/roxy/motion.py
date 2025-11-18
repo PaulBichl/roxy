@@ -123,37 +123,24 @@ def classify_image(image_path) -> str:
     return ncnn_model(image)
 
 
-chip = gpiod.Chip("gpiochip4")
-red_line = chip.get_line(17)
-black_line = chip.get_line(27)
-
-
 def open_lock() -> None:
     """
     function which opens the lock using GPIO
     """
-    red_line.request(consumer="lock", type=gpiod.LINE_REQ_DIR_OUT)
-    black_line.request(consumer="lock", type=gpiod.LINE_REQ_DIR_OUT)
-    red_line.set_value(1)
-    black_line.set_value(0)
+    gpiod.output("17", gpiod.HIGH)
+    gpiod.output("27", gpiod.LOW)
     time.sleep(1)
-    red_line.set_value(0)
-    red_line.release()
-    black_line.release()
+    gpiod.output("17", gpiod.LOW)
 
 
 def close_lock() -> None:
     """
     function which closes the lock using GPIO
     """
-    red_line.request(consumer="lock", type=gpiod.LINE_REQ_DIR_OUT)
-    black_line.request(consumer="lock", type=gpiod.LINE_REQ_DIR_OUT)
-    red_line.set_value(0)
-    black_line.set_value(1)
+    gpiod.output("27", gpiod.HIGH)
+    gpiod.output("17", gpiod.LOW)
     time.sleep(1)
-    black_line.set_value(0)
-    red_line.release()
-    black_line.release()
+    gpiod.output("27", gpiod.LOW)
 
 
 open_lock()
