@@ -134,6 +134,8 @@ def open_lock() -> None:
     black_line.set_value(0)
     time.sleep(1)
     red_line.set_value(0)
+    red_line.release()
+    black_line.release()
 
 
 def close_lock() -> None:
@@ -146,6 +148,8 @@ def close_lock() -> None:
     black_line.set_value(1)
     time.sleep(1)
     black_line.set_value(0)
+    red_line.release()
+    black_line.release()
 
 
 open_lock()
