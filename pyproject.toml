@@ -90,12 +90,11 @@ dependencies = [ # add your production dependencies here
     "ultralytics",
     "onnx",
     "scikit-image",
-    "opencv-python",
     "joblib",
     "pydrive",
     "ncnn", # ncnn used for optimized model deployment
     "opencv-python", # used for camera setup
-    "requests",
+    "flask",
 ]
 
 # https://hatch.pypa.io/latest/config/environment/overview/#scripts
