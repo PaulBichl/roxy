@@ -9,7 +9,11 @@ import gpiod  # gpio libary for raspberry pi, not in pyproject.toml, dont add
 import requests
 from ultralytics import YOLO
 
-ncnn_model = YOLO("./tmp/models/model_ncnn_model")  # TODO this is not clean, refactor
+try:
+    ncnn_model = YOLO("./tmp/models/model_ncnn_model")  # TODO this is not clean, refactor
+except Exception as e:
+    print(f"❌ Failed to load NCNN model: {e}")
+    ncnn_model = YOLO("./tmp/models/model.pt")  # Fallback to original model => slow
 
 # === CONFIGURATION ===
 json_data = {}
