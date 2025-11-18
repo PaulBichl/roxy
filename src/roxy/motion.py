@@ -123,24 +123,29 @@ def classify_image(image_path) -> str:
     return ncnn_model(image)
 
 
+CHIP_NAME = "gpiochip0"  # idk which one is right
+chip = gpiod.Chip(CHIP_NAME)
+
+PIN_LOCK = 17
+PIN_OPEN = 18
+
+lines = chip.get_lines([PIN_LOCK, PIN_OPEN])
+config = gpiod.LineRequest()
+config.consumer = "lock-control"
+config.request_type = gpiod.LINE_REQ_DIR_OUT
+
+
 def open_lock() -> None:
     """
     function which opens the lock using GPIO
     """
-    gpiod.output("17", gpiod.HIGH)
-    gpiod.output("27", gpiod.LOW)
-    time.sleep(1)
-    gpiod.output("17", gpiod.LOW)
+    lines.set_values({PIN_LOCK: 0, PIN_OPEN: 1})
+    print("Opened (17=LOW, 18=HIGH)")
 
 
 def close_lock() -> None:
-    """
-    function which closes the lock using GPIO
-    """
-    gpiod.output("27", gpiod.HIGH)
-    gpiod.output("17", gpiod.LOW)
-    time.sleep(1)
-    gpiod.output("27", gpiod.LOW)
+    lines.set_values({PIN_LOCK: 1, PIN_OPEN: 0})
+    print("Locked (17=HIGH, 18=LOW)")
 
 
 open_lock()
