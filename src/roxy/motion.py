@@ -8,7 +8,7 @@ import cv2
 import requests
 from ultralytics import YOLO
 
-ncnn_model = YOLO("./tmp/models/model_ncnn_model")  # TODO thsi is not clean, refactor
+ncnn_model = YOLO("./tmp/models/model_ncnn_model")  # TODO this is not clean, refactor
 
 # === CONFIGURATION ===
 json_data = {}
