@@ -5,8 +5,8 @@ import time
 from datetime import datetime
 
 import cv2
+import gpiod
 import requests
-import RPi.GPIO as GPIO
 from ultralytics import YOLO
 
 ncnn_model = YOLO("./tmp/models/model_ncnn_model")  # TODO this is not clean, refactor
@@ -119,31 +119,33 @@ def classify_image(image_path) -> str:
     return ncnn_model(image)
 
 
-GPIO.setmode(GPIO.BOARD)
-GPIO.setup(17, GPIO.OUT)
-GPIO.setup(18, GPIO.OUT)
+chip = gpiod.Chip("gpiochip4")
+red_line = chip.get_line(17)
+black_line = chip.get_line(27)
 
 
 def open_lock() -> None:
     """
     function which opens the lock using GPIO
     """
-    GPIO.output(17, GPIO.HIGH)
-    GPIO.output(18, GPIO.LOW)
-    time.sleep(5)
-    GPIO.output(17, GPIO.LOW)
-    GPIO.output(18, GPIO.LOW)
+    red_line.request(consumer="lock", type=gpiod.LINE_REQ_DIR_OUT)
+    black_line.request(consumer="lock", type=gpiod.LINE_REQ_DIR_OUT)
+    red_line.set_value(1)
+    black_line.set_value(0)
+    time.sleep(1)
+    red_line.set_value(0)
 
 
 def close_lock() -> None:
     """
     function which closes the lock using GPIO
     """
-    GPIO.output(17, GPIO.LOW)
-    GPIO.output(18, GPIO.HIGH)
-    time.sleep(5)
-    GPIO.output(17, GPIO.LOW)
-    GPIO.output(18, GPIO.LOW)
+    red_line.request(consumer="lock", type=gpiod.LINE_REQ_DIR_OUT)
+    black_line.request(consumer="lock", type=gpiod.LINE_REQ_DIR_OUT)
+    red_line.set_value(0)
+    black_line.set_value(1)
+    time.sleep(1)
+    black_line.set_value(0)
 
 
 open_lock()
