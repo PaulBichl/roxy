@@ -6,6 +6,7 @@ from datetime import datetime
 
 import cv2
 import requests
+import RPi.GPIO as GPIO
 from ultralytics import YOLO
 
 ncnn_model = YOLO("./tmp/models/model_ncnn_model")  # TODO this is not clean, refactor
@@ -117,6 +118,36 @@ def classify_image(image_path) -> str:
     image = cv2.imread(image_path)
     return ncnn_model(image)
 
+
+GPIO.setmode(GPIO.BOARD)
+GPIO.setup(17, GPIO.OUT)
+GPIO.setup(18, GPIO.OUT)
+
+
+def open_lock() -> None:
+    """
+    function which opens the lock using GPIO
+    """
+    GPIO.output(17, GPIO.HIGH)
+    GPIO.output(18, GPIO.LOW)
+    time.sleep(5)
+    GPIO.output(17, GPIO.LOW)
+    GPIO.output(18, GPIO.LOW)
+
+
+def close_lock() -> None:
+    """
+    function which closes the lock using GPIO
+    """
+    GPIO.output(17, GPIO.LOW)
+    GPIO.output(18, GPIO.HIGH)
+    time.sleep(5)
+    GPIO.output(17, GPIO.LOW)
+    GPIO.output(18, GPIO.LOW)
+
+
+open_lock()
+close_lock()
 
 # === MAIN LOOP === TODO replace with main
 while True:
