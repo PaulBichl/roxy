@@ -49,7 +49,7 @@ def send_to_discord(image_path, image_label="", startup=False) -> None:
     with open(image_path, "rb") as f:
         files = {"file": f}
         label = (
-            "🚀 Startup image"
+            f"🚀 Startup image, {datetime.now().strftime('%H:%M:%S')}, class dedected: {image_label}"
             if startup
             else f"🚨 Motion detected at {datetime.now().strftime('%H:%M:%S')}, class dedected: {image_label}"
         )
