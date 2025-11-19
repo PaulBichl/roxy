@@ -19,6 +19,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy your application
 COPY . .
 
+# download ml model
+RUN python3 setup.py
+
 # Make your script executable
 RUN chmod +x motion.py
 
