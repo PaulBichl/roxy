@@ -5,15 +5,15 @@ import time
 from datetime import datetime
 
 import cv2
-import gpiod  # gpio libary for raspberry pi, not in pyproject.toml, dont add
+
+# import gpiod  # gpio libary for raspberry pi, not in pyproject.toml, dont add
 import requests
 from ultralytics import YOLO
 
 try:
-    ncnn_model = YOLO("./tmp/models/model_ncnn_model")  # TODO this is not clean, refactor
+    model = YOLO("./tmp/models/model.pt")  # use .pt for now, TODO switch to ncnn
 except Exception as e:
-    print(f"❌ Failed to load NCNN model: {e}")
-    ncnn_model = YOLO("./tmp/models/model.pt")  # Fallback to original model => slow
+    print(f"❌ Failed to load model: {e}")
 
 # === CONFIGURATION ===
 json_data = {}
@@ -34,7 +34,7 @@ ALPHA = json_data.get(
 )  # How quickly the background model adapts to slow changes (like sunrise). (0.01-0.1 is a good range)
 
 # --- System Paths ---
-IMAGE_PATH = json_data.get("IMAGE_PATH", "/tmp/motion.jpg")  # noqa: S108 TODO fix this
+IMAGE_PATH = json_data.get("IMAGE_PATH", "/tmp/motion.jpg")  # noqa: S108 TODO fix this, change to tmp/motion.jpg on windows
 
 # === STATE ===
 background_model = None
@@ -96,6 +96,16 @@ def capture_frame() -> cv2.Mat | None:
         return None
 
 
+def classify_image(image_path) -> str:
+    """
+    function which uses trained ML model to classify image
+    and returns the label as string
+    """
+    cv2.imread(image_path)
+    results = model(image_path)
+    return results[0].names[results[0].probs.top1]
+
+
 # === INITIALIZE BACKGROUND MODEL ===
 print("📸 Capturing startup image to establish background...")
 # A longer sleep on startup ensures the very first frame is well-exposed.
@@ -103,7 +113,7 @@ time.sleep(3)
 initial_frame = capture_frame()
 
 if initial_frame is not None:
-    send_to_discord(IMAGE_PATH, startup=True)
+    send_to_discord(IMAGE_PATH, classify_image(IMAGE_PATH), startup=True)
     # FIX: Corrected typo to cv2.COLOR_BGR2GRAY
     gray = cv2.cvtColor(initial_frame, cv2.COLOR_BGR2GRAY)
     gray = cv2.GaussianBlur(gray, (21, 21), 0)
@@ -113,43 +123,34 @@ else:
     print("❌ Could not capture startup image. Exiting.")
     exit()
 
+# this does not work, need to debug later
+# CHIP_NAME = "gpiochip0"  # idk which one is right
+# chip = gpiod.Chip(CHIP_NAME)
 
-def classify_image(image_path) -> str:
-    """
-    function which uses trained ML model to classify image
-    and returns the label as string
-    """
-    image = cv2.imread(image_path)
-    return ncnn_model(image)
+# PIN_LOCK = 17
+# PIN_OPEN = 18
 
-
-CHIP_NAME = "gpiochip0"  # idk which one is right
-chip = gpiod.Chip(CHIP_NAME)
-
-PIN_LOCK = 17
-PIN_OPEN = 18
-
-lines = chip.get_lines([PIN_LOCK, PIN_OPEN])
-config = gpiod.LineRequest()
-config.consumer = "lock-control"
-config.request_type = gpiod.LINE_REQ_DIR_OUT
+# lines = chip.get_lines([PIN_LOCK, PIN_OPEN])
+# config = gpiod.LineRequest()
+# config.consumer = "lock-control"
+# config.request_type = gpiod.LINE_REQ_DIR_OUT
 
 
-def open_lock() -> None:
-    """
-    function which opens the lock using GPIO
-    """
-    lines.set_values({PIN_LOCK: 0, PIN_OPEN: 1})
-    print("Opened (17=LOW, 18=HIGH)")
+# def open_lock() -> None:
+#     """
+#     function which opens the lock using GPIO
+#     """
+#     lines.set_values({PIN_LOCK: 0, PIN_OPEN: 1})
+#     print("Opened (17=LOW, 18=HIGH)")
 
 
-def close_lock() -> None:
-    lines.set_values({PIN_LOCK: 1, PIN_OPEN: 0})
-    print("Locked (17=HIGH, 18=LOW)")
+# def close_lock() -> None:
+#     lines.set_values({PIN_LOCK: 1, PIN_OPEN: 0})
+#     print("Locked (17=HIGH, 18=LOW)")
 
 
-open_lock()
-close_lock()
+# open_lock()
+# close_lock()
 
 # === MAIN LOOP === TODO replace with main
 while True:
