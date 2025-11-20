@@ -5,8 +5,6 @@ import time
 from datetime import datetime
 
 import cv2
-
-# import gpiod  # gpio libary for raspberry pi, not in pyproject.toml, dont add
 import requests
 from ultralytics import YOLO
 
@@ -122,35 +120,6 @@ if initial_frame is not None:
 else:
     print("❌ Could not capture startup image. Exiting.")
     exit()
-
-# this does not work, need to debug later
-# CHIP_NAME = "gpiochip0"  # idk which one is right
-# chip = gpiod.Chip(CHIP_NAME)
-
-# PIN_LOCK = 17
-# PIN_OPEN = 18
-
-# lines = chip.get_lines([PIN_LOCK, PIN_OPEN])
-# config = gpiod.LineRequest()
-# config.consumer = "lock-control"
-# config.request_type = gpiod.LINE_REQ_DIR_OUT
-
-
-# def open_lock() -> None:
-#     """
-#     function which opens the lock using GPIO
-#     """
-#     lines.set_values({PIN_LOCK: 0, PIN_OPEN: 1})
-#     print("Opened (17=LOW, 18=HIGH)")
-
-
-# def close_lock() -> None:
-#     lines.set_values({PIN_LOCK: 1, PIN_OPEN: 0})
-#     print("Locked (17=HIGH, 18=LOW)")
-
-
-# open_lock()
-# close_lock()
 
 # === MAIN LOOP === TODO replace with main
 while True:
