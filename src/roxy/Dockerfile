@@ -21,6 +21,7 @@ COPY . .
 
 # download ml model
 RUN python3 setup.py
+RUN pip install gpiozero rpi-lgpio
 
 # Make your script executable
 RUN chmod +x motion.py
