@@ -3,4 +3,4 @@ ultralytics
 opencv-python
 numpy
 requests
-gpiod
+gpiozero
