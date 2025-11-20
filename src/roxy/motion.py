@@ -6,8 +6,26 @@ from datetime import datetime
 
 import cv2
 import requests
-from flaplock import FlapLock
+from gpiozero import Motor
 from ultralytics import YOLO
+
+
+class FlapLock:
+    def __init__(self) -> None:
+        self.motor = Motor(forward=6, backward=5)
+
+    def lock(self) -> None:
+        """Engage the lock by running the motor forward."""
+        self.motor.forward()
+        time.sleep(1)  # Run the motor for 1 second to ensure the lock is engaged
+        self.motor.stop()
+
+    def unlock(self) -> None:
+        """Disengage the lock by running the motor backward."""
+        self.motor.backward()
+        time.sleep(1)  # Run the motor for 1 second to ensure the lock is disengaged
+        self.motor.stop()
+
 
 try:
     model = YOLO("./tmp/models/model.pt")  # use .pt for now, TODO switch to ncnn
