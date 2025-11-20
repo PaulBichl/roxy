@@ -8,12 +8,17 @@ import cv2
 import requests
 from ultralytics import YOLO
 
+from roxy.flaplock import FlapLock
+
 try:
     model = YOLO("./tmp/models/model.pt")  # use .pt for now, TODO switch to ncnn
 except Exception as e:
     print(f"❌ Failed to load model: {e}")
 
 # === CONFIGURATION ===
+lock = FlapLock()
+lock.lock()
+
 json_data = {}
 with open("data.json") as data:
     json_data = json.load(data)
@@ -150,5 +155,14 @@ while True:
 
     if motion_detected and (time.time() - last_capture_time > CAPTURE_INTERVAL):
         print(f"⚠️ Motion detected at {datetime.now().strftime('%H:%M:%S')}!")
-        send_to_discord(IMAGE_PATH, classify_image(IMAGE_PATH))
+        dedected_label = classify_image(IMAGE_PATH)
+
+        if dedected_label == "cat":
+            print("🔓 Cat detected, unlocking flap...")
+            lock.unlock()
+            send_to_discord(IMAGE_PATH, dedected_label)
+            time.sleep(30)
+            lock.lock()
+        else:
+            send_to_discord(IMAGE_PATH, dedected_label)
         last_capture_time = time.time()  #!/usr/bin/env python3
