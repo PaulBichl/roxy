@@ -26,4 +26,4 @@ RUN python3 setup.py
 RUN chmod +x motion.py
 
 # Start with bash so we can find the error
-CMD ["python3", "-m", "roxy.motion"]
+CMD ["python3", "-m", "camera.motion"]
