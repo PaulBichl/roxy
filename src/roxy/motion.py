@@ -8,7 +8,7 @@ import cv2
 import requests
 from ultralytics import YOLO
 
-from roxy.flaplock import FlapLock
+from .flaplock import FlapLock
 
 try:
     model = YOLO("./tmp/models/model.pt")  # use .pt for now, TODO switch to ncnn
