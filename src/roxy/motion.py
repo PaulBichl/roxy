@@ -64,12 +64,12 @@ print("📷 Initializing motion detection script for Day & Night...")
 
 
 # === FUNCTIONS ===
-def send_to_discord(image_path, image_label="", startup=False) -> None:
+def send_to_discord(image_path, image_label="", startup=False, ml_processing_time="") -> None:
     """Send an image to the Discord webhook."""
     with open(image_path, "rb") as f:
         files = {"file": f}
         label = (
-            f"🚀 Startup image, {datetime.now().strftime('%H:%M:%S')}, class dedected: {image_label}"
+            f"🚀 Startup image, {datetime.now().strftime('%H:%M:%S')}, class dedected: {image_label}, image proecssing time {ml_processing_time}"
             if startup
             else f"🚨 Motion detected at {datetime.now().strftime('%H:%M:%S')}, class dedected: {image_label}"
         )
@@ -121,9 +121,12 @@ def classify_image(image_path) -> str:
     function which uses trained ML model to classify image
     and returns the label as string
     """
+    processing_start = time.time()
     cv2.imread(image_path)
     results = model(image_path)
-    return results[0].names[results[0].probs.top1]
+    processing_end = time.time()
+    processing_time = processing_end - processing_start
+    return results[0].names[results[0].probs.top1], processing_time
 
 
 # === INITIALIZE BACKGROUND MODEL ===
@@ -172,14 +175,14 @@ while True:
 
     if motion_detected and (time.time() - last_capture_time > CAPTURE_INTERVAL):
         print(f"⚠️ Motion detected at {datetime.now().strftime('%H:%M:%S')}!")
-        dedected_label = classify_image(IMAGE_PATH)
+        dedected_label, ml_processing_time = classify_image(IMAGE_PATH)
 
         if dedected_label == "cat":
             print("🔓 Cat detected, unlocking flap...")
             lock.unlock()
-            send_to_discord(IMAGE_PATH, dedected_label)
+            send_to_discord(image_path=IMAGE_PATH, image_label=dedected_label, ml_processing_time=ml_processing_time)
             time.sleep(30)
             lock.lock()
         else:
-            send_to_discord(IMAGE_PATH, dedected_label)
+            send_to_discord(image_path=IMAGE_PATH, image_label=dedected_label, ml_processing_time=ml_processing_time)
         last_capture_time = time.time()  #!/usr/bin/env python3
