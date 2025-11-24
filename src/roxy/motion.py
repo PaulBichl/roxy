@@ -9,6 +9,8 @@ import requests
 from gpiozero import Motor
 from ultralytics import YOLO
 
+LOCK_OVERRIDE = True  # Set to True to keep the flap unlocked for testing purposes
+
 
 class FlapLock:
     def __init__(self) -> None:
@@ -16,12 +18,16 @@ class FlapLock:
 
     def lock(self) -> None:
         """Engage the lock by running the motor forward."""
+        if LOCK_OVERRIDE:
+            return
         self.motor.forward()
         time.sleep(1)  # Run the motor for 1 second to ensure the lock is engaged
         self.motor.stop()
 
     def unlock(self) -> None:
         """Disengage the lock by running the motor backward."""
+        if LOCK_OVERRIDE:
+            return
         self.motor.backward()
         time.sleep(1)  # Run the motor for 1 second to ensure the lock is disengaged
         self.motor.stop()
