@@ -1,194 +1,221 @@
 #!/usr/bin/env python3
 import json
-import subprocess
+import os
 import time
 from datetime import datetime
 
 import cv2
 import requests
 from gpiozero import Motor
+from picamera2 import Picamera2  # only works on raspberry pi OS with picamera2 installed
 from ultralytics import YOLO
 
-LOCK_OVERRIDE = True  # Set to True to keep the flap unlocked for testing purposes
+# === CONFIGURATION ===
+CONFIG_FILE = "data.json"
+config = {
+    "discord_webhook": "",
+    "conf_threshold": 0.5,
+    "verify_duration": 1,
+    "notify_cooldown": 2,
+    "image_path": "/tmp/motion.jpg",
+    "lock_state": "UNLOCKED",
+    "lock_override": False,
+}
+
+if os.path.exists(CONFIG_FILE):
+    try:
+        with open(CONFIG_FILE) as f:
+            config.update(json.load(f))
+    except Exception as e:
+        print(f"⚠️ Error reading config: {e}")
+
+# Global values (use lowercase keys from defaults/data.json)
+DISCORD_WEBHOOK = config.get("discord_webhook", "")
+CONF_THRESHOLD = config.get("conf_threshold", 0.5)
+VERIFY_DURATION = config.get("verify_duration", 1)
+NOTIFY_COOLDOWN = config.get("notify_cooldown", 2)
+IMAGE_PATH = config.get("image_path", "/tmp/motion.jpg")
+LOCK_STATE = config.get("lock_state", "UNLOCKED").upper()
+LOCK_OVERRIDE = config.get("lock_override", False)
+
+ACTION_DEBOUNCE = 1.0
+ACTUATION_DURATION = 0.5
+MODEL_SIZE = [640, 640]  # change to IMAGE_SIZE ?
+# track current lock state in runtime to avoid redundant motor commands
+CURRENT_LOCK_STATE = LOCK_STATE
+
+# track last attempted motor action to debounce attempts
+LAST_ACTION_TIME = 0.0
+
+SAFE_CLASSES = ["cat"]
+# treat background as a locking condition as requested
+PREY_CLASSES = ["cat+prey"]
+IGNORED_CLASSES = ["background"]
 
 
+# === HARDWARE ===
 class FlapLock:
     def __init__(self) -> None:
         self.motor = Motor(forward=6, backward=5)
+        self.lock_state = ""  # TODO replace with enum
+        self.last_action_time = 0.0
 
     def lock(self) -> None:
-        """Engage the lock by running the motor forward."""
         if LOCK_OVERRIDE:
+            return
+        # avoid redundant locking
+        if self.lock_state == "LOCKED":
+            # no action required
             return
         self.motor.forward()
-        time.sleep(1)  # Run the motor for 1 second to ensure the lock is engaged
+        time.sleep(ACTUATION_DURATION)
         self.motor.stop()
+        self.lock_state = "LOCKED"
+        self.last_action_time = time.time()
 
     def unlock(self) -> None:
-        """Disengage the lock by running the motor backward."""
         if LOCK_OVERRIDE:
             return
+        # avoid redundant locking
+        if self.lock_state == "UNLOCKED":
+            # no action required
+            return
         self.motor.backward()
-        time.sleep(1)  # Run the motor for 1 second to ensure the lock is disengaged
+        time.sleep(ACTUATION_DURATION)
         self.motor.stop()
+        self.lock_state = "UNLOCKED"
+        self.last_action_time = time.time()
 
 
-try:
-    model = YOLO("./tmp/models/model.pt")  # use .pt for now, TODO switch to ncnn
-except Exception as e:
-    print(f"❌ Failed to load model: {e}")
+# === HELPERS ===
+def send_to_discord(image_path, label="", conf=0.0, is_startup=False) -> None:
+    if not DISCORD_WEBHOOK:
+        return
+    timestamp = datetime.now().strftime("%H:%M:%S")
 
-# === CONFIGURATION ===
-lock = FlapLock()
-lock.lock()
+    if is_startup:
+        msg = f"🚀 **System Online** at {timestamp} | Picamera2 Mode"
+    else:
+        emoji = "🛑" if label in PREY_CLASSES else "😺"
+        msg = f"{emoji} **{label.upper()}** detected | Conf: {conf:.2f} | 🕒 {timestamp}"
 
-json_data = {}
-with open("data.json") as data:
-    json_data = json.load(data)
-    DISCORD_WEBHOOK = json_data.get("discord_webhook", "")
-
-# --- Fine-tune these values for your environment ---
-MOTION_THRESHOLD = json_data.get(
-    "MOTION_THRESHOLD",
-    50,
-)  # How much a pixel needs to change to be considered motion (1-255). Lower is more sensitive.
-MIN_AREA = json_data.get("MIN_AREA", 10000)  # The minimum size (in pixels) of a moving object to trigger an alert.
-CAPTURE_INTERVAL = json_data.get("CAPTURE_INTERVAL", 3)  # Seconds between motion trigger notifications.
-ALPHA = json_data.get(
-    "ALPHA",
-    0.02,
-)  # How quickly the background model adapts to slow changes (like sunrise). (0.01-0.1 is a good range)
-
-# --- System Paths ---
-IMAGE_PATH = json_data.get("IMAGE_PATH", "/tmp/motion.jpg")  # noqa: S108 TODO fix this, change to tmp/motion.jpg on windows
-
-# === STATE ===
-background_model = None
-last_capture_time = 0
-
-print("📷 Initializing motion detection script for Day & Night...")
-
-
-# === FUNCTIONS ===
-def send_to_discord(image_path, image_label="", startup=False, ml_processing_time="") -> None:
-    """Send an image to the Discord webhook."""
-    with open(image_path, "rb") as f:
-        files = {"file": f}
-        label = (
-            f"🚀 Startup image, {datetime.now().strftime('%H:%M:%S')}, class dedected: {image_label}, image proecssing time {ml_processing_time}"
-            if startup
-            else f"🚨 Motion detected at {datetime.now().strftime('%H:%M:%S')}, class dedected: {image_label}"
-        )
-        data = {"content": label}
-        try:
-            requests.post(DISCORD_WEBHOOK, data=data, files=files, timeout=10)
-            print("✅ Image sent to Discord")
-        except Exception as e:
-            print(f"❌ Discord upload failed: {e}")
-
-
-def capture_frame() -> cv2.Mat | None:
-    """
-    Captures a frame using rpicam-still, allowing auto-exposure to adapt
-    to day/night conditions while giving it time to stabilize.
-    """
     try:
-        command = [
-            "rpicam-still",
-            "-o",
-            IMAGE_PATH,
-            "--width",
-            "640",
-            "--height",
-            "640",
-            # CRITICAL: Give the camera 1 second (1000ms) for its auto-exposure
-            # and auto-white-balance algorithms to settle before taking the picture.
-            # This prevents false alarms from rapid auto-adjustments.
-            "-t",
-            "1000",
-            "--nopreview",
-        ]
-        subprocess.run(command, check=True, capture_output=True, text=True)  # noqa: S603 subprocess call is safe here, bandit false positive, consider reviewing
-        frame = cv2.imread(IMAGE_PATH)
-        if frame is None:
-            print("❌ Failed to read image from disk after capture.")
-            return None
-        return frame
-    except subprocess.CalledProcessError as e:
-        print(f"❌ rpicam-still command failed: {e.stderr}")
-        return None
+        with open(image_path, "rb") as f:
+            files = {"file": f}
+            data = {"content": msg}
+            requests.post(DISCORD_WEBHOOK, data=data, files=files, timeout=5)
+            print("✅ Discord sent")
     except Exception as e:
-        print(f"❌ An unexpected error occurred during capture: {e}")
-        return None
+        print(f"❌ Discord fail: {e}")
 
 
-def classify_image(image_path) -> str:
-    """
-    function which uses trained ML model to classify image
-    and returns the label as string
-    """
-    processing_start = time.time()
-    cv2.imread(image_path)
-    results = model(image_path)
-    processing_end = time.time()
-    processing_time = processing_end - processing_start
-    return results[0].names[results[0].probs.top1], processing_time
+def classify_frame(model, frame) -> tuple[str, float]:
+    # Run inference directly on the BGR image from Picamera2
+    results = model(frame, verbose=False, conf=CONF_THRESHOLD)
+    top1_index = results[0].probs.top1
+    conf = results[0].probs.top1conf.item()
+    label = results[0].names[top1_index]
+    return label, conf
 
 
-# === INITIALIZE BACKGROUND MODEL ===
-print("📸 Capturing startup image to establish background...")
-# A longer sleep on startup ensures the very first frame is well-exposed.
-time.sleep(3)
-initial_frame = capture_frame()
+# === MAIN ===
+def main() -> None:
+    print("Loading AI Model...")
+    try:
+        model = YOLO("./tmp/models/model.pt")
+    except Exception:
+        print("Failed to load the model")
+        return
 
-if initial_frame is not None:
-    send_to_discord(IMAGE_PATH, classify_image(IMAGE_PATH), startup=True)
-    # FIX: Corrected typo to cv2.COLOR_BGR2GRAY
-    gray = cv2.cvtColor(initial_frame, cv2.COLOR_BGR2GRAY)
-    gray = cv2.GaussianBlur(gray, (21, 21), 0)
-    background_model = gray.astype("float")
-    print("✅ Background model established. Starting motion detection...")
-else:
-    print("❌ Could not capture startup image. Exiting.")
-    exit()
+    lock = FlapLock()
+    if lock.lock_state == "UNLOCKED":
+        pass
+    else:
+        lock.lock()
 
-# === MAIN LOOP === TODO replace with main
-while True:
-    frame = capture_frame()
+    print("Initializing Picamera2")
+    try:
+        picam = Picamera2()
+        config = picam.create_preview_configuration(main={"size": MODEL_SIZE, "format": "XBGR8888"})
+        picam.configure(config)
+        picam.start()
+    except Exception:
+        print("Camera Init Failed")
+        return
 
-    if frame is None:
-        print("⚠️ Skipping frame due to capture error.")
-        time.sleep(2)
-        continue
+    print("Camera Active")
 
-    # FIX: Corrected typo to cv2.COLOR_BGR2GRAY
-    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    gray = cv2.GaussianBlur(gray, (21, 21), 0)
+    # Startup Notification
+    try:
+        # Grab first frame
+        # capture_array() is INSTANT. No buffer lag.
+        frame_raw = picam.capture_array()
+        # Drop the Alpha channel (4th channel) to make it standard BGR for OpenCV/YOLO
+        frame_bgr = frame_raw[:, :, :3]
+        # enforce model input size
+        frame_bgr = cv2.resize(frame_bgr, MODEL_SIZE, interpolation=cv2.INTER_LINEAR)
 
-    # FIX: Convert the current frame to a float to match the background_model's data type.
-    current_frame_float = gray.astype("float")
+        cv2.imwrite(IMAGE_PATH, frame_bgr)
+        send_to_discord(IMAGE_PATH, is_startup=True)
+    except Exception as e:
+        print(f"⚠️ Startup frame error: {e}")
 
-    # Update the background model slowly over time using the float version of the frame
-    cv2.addWeighted(current_frame_float, ALPHA, background_model, 1 - ALPHA, 0, background_model)
+    last_notify_time = 0
 
-    # Compare the original uint8 gray frame to the stable background model
-    frame_delta = cv2.absdiff(gray, cv2.convertScaleAbs(background_model))
-    thresh = cv2.threshold(frame_delta, MOTION_THRESHOLD, 255, cv2.THRESH_BINARY)[1]
-    thresh = cv2.dilate(thresh, None, iterations=2)
-    contours, _ = cv2.findContours(thresh.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    # State variables for the "Verification Loop"
+    verify_start_time = 0
 
-    motion_detected = any(cv2.contourArea(c) >= MIN_AREA for c in contours)
+    try:
+        while True:
+            # 1. Capture Frame (Zero Copy, Zero Latency)
+            # This grabs the sensor data directly into RAM
+            frame_raw = picam.capture_array()
 
-    if motion_detected and (time.time() - last_capture_time > CAPTURE_INTERVAL):
-        print(f"⚠️ Motion detected at {datetime.now().strftime('%H:%M:%S')}!")
-        dedected_label, ml_processing_time = classify_image(IMAGE_PATH)
+            # Remove Alpha channel (XBGR -> BGR)
+            # YOLO expects 3 channels (Blue, Green, Red)
+            frame = frame_raw[:, :, :3]
+            # ensure we feed the model a fixed-size image matching MODEL_SIZE
+            if (frame.shape[1], frame.shape[0]) != MODEL_SIZE:
+                frame = cv2.resize(frame, MODEL_SIZE, interpolation=cv2.INTER_LINEAR)
 
-        if dedected_label == "cat":
-            print("🔓 Cat detected, unlocking flap...")
-            lock.unlock()
-            send_to_discord(image_path=IMAGE_PATH, image_label=dedected_label, ml_processing_time=ml_processing_time)
-            time.sleep(30)
-            lock.lock()
-        else:
-            send_to_discord(image_path=IMAGE_PATH, image_label=dedected_label, ml_processing_time=ml_processing_time)
-        last_capture_time = time.time()  #!/usr/bin/env python3
+            current_time = time.time()
+
+            # 2. Run AI
+            # We do NOT use sleep() here. We run as fast as the AI can process.
+            # This ensures we are always looking at the "now".
+            label, conf = classify_frame(model, frame)
+
+            if (current_time - verify_start_time) >= VERIFY_DURATION:
+                if label in PREY_CLASSES:
+                    if (current_time - last_notify_time) > NOTIFY_COOLDOWN:
+                        last_notify_time = current_time
+                        cv2.imwrite(IMAGE_PATH, frame)
+                        send_to_discord(IMAGE_PATH, label, conf)
+
+                    if conf >= CONF_THRESHOLD:
+                        # locking door
+                        lock.lock()
+
+                elif label in SAFE_CLASSES:
+                    if (current_time - last_notify_time) > NOTIFY_COOLDOWN:
+                        last_notify_time = current_time
+                        cv2.imwrite(IMAGE_PATH, frame)
+                        send_to_discord(IMAGE_PATH, label, conf)
+
+                    if conf >= CONF_THRESHOLD:
+                        lock.unlock()
+
+                else:
+                    # background detected — ensure locked
+                    if (current_time - LAST_ACTION_TIME) > ACTION_DEBOUNCE:
+                        lock.lock()
+
+    except KeyboardInterrupt:
+        print("\n👋 Exiting...")
+    finally:
+        picam.stop()
+        lock.motor.close()
+
+
+if __name__ == "__main__":
+    main()

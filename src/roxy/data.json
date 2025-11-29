@@ -1,5 +1,10 @@
 {
   "discord_webhook": "https://discord.com/api/webhooks/1424760641645973524/YY--RI5wcTTlJhrG6yptX-bFKo0HwJX-kn-oPTa-ilMZ6B89T16htSNH_7KOshT7Zm-O",
-  "capture_interval": 1,
+  "conf_threshold": 0.5,
+  "verify_duration": 1,
+  "notify_cooldown": 2,
+  "image_path": "/tmp/motion.jpg",
+  "lock_state": "UNLOCKED",
+  "lock_override": false,
   "remote_server_ip": "192.168.1.112"
 }

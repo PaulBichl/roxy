@@ -13,5 +13,8 @@ docker run -d \
   --device /dev/gpiochip0 \
   --device /dev/gpiochip1 \
   -v /run/udev:/run/udev:ro \
+  -v /etc/localtime:/etc/localtime:ro \
+  -v /etc/timezone:/etc/timezone:ro \
+  -e TZ="$(cat /etc/timezone)" \
   -v "$PWD/data.json:/camera/data.json:ro" \
   p5-camera
