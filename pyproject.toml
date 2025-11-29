@@ -215,6 +215,7 @@ ignore = [ # currently the rules are quite strict
     "RUF012",   # Mutable default values used
     "ANN001",  # Missing type annotation
     "B007",  # Loop control variable not used within the loop body
+    "S108", # hardcoded file paths, etc
 ]
 # https://docs.astral.sh/ruff/settings/#unfixable
 unfixable = []
