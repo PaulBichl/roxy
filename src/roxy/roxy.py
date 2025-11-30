@@ -29,7 +29,7 @@ if os.path.exists(CONFIG_FILE):
     except Exception as e:
         print(f"⚠️ Error reading config: {e}")
 
-# Global values (use lowercase keys from defaults/data.json)
+# Global values (use lowercase keys from defaults/data.json) TODO refctor
 DISCORD_WEBHOOK = config.get("discord_webhook", "")
 CONF_THRESHOLD = config.get("conf_threshold", 0.5)
 VERIFY_DURATION = config.get("verify_duration", 1)
@@ -159,7 +159,7 @@ class Roxy:
         """
         self.lock.lock()
         self.lock.unlock()
-        dummy_frame = cv2.imread("./test.jpg")  # TODO add dummy image
+        dummy_frame = cv2.imread("./test.jpg")
         label, conf = self.classify_frame(dummy_frame)
         self.send_to_discord("./test.jpg", label, conf, is_startup=True)
 
