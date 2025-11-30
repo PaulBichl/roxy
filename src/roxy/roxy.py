@@ -87,6 +87,41 @@ class FlapLock:
         self.last_action_time = time.time()
 
 
+class Roxy:
+    def __init__(self) -> None:
+        self.lock = FlapLock()
+        self.picam = Picamera2()
+        self.model = None
+        self.last_notify_time = 0.0
+        self.verify_start_time = 0.0  # needed?
+        self.lock.lock()
+
+    def initialize_model(self, model_path: str) -> bool:
+        try:
+            self.model = YOLO(model_path)
+            return True
+        except Exception:
+            print("Failed to load the model")
+            return False
+
+    def initialize_camera(self) -> bool:
+        try:
+            config = self.picam.create_preview_configuration(
+                main={"size": MODEL_SIZE, "format": "XBGR8888"},
+            )  # i dont understand this, @Isabell pls explain
+            self.picam.configure(config)
+            self.picam.start()
+        except Exception:
+            print("Camera Init Failed")
+            return False
+
+    def start_up(self) -> None:
+        if self.lock.lock_state == "UNLOCKED":
+            pass
+        else:
+            self.lock.lock()
+
+
 # === HELPERS ===
 def send_to_discord(image_path, label="", conf=0.0, is_startup=False) -> None:
     if not DISCORD_WEBHOOK:
