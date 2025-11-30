@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import json
+import logging
 import os
 import time
 from datetime import datetime
@@ -9,6 +10,14 @@ import requests
 from gpiozero import Motor
 from picamera2 import Picamera2  # only works on raspberry pi OS with picamera2 installed
 from ultralytics import YOLO
+
+logging.basicConfig(
+    filename="/var/log/app.log",
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+)
+
+logging.info("Log entry inside container")
 
 # === CONFIGURATION ===
 CONFIG_FILE = "data.json"
@@ -173,14 +182,16 @@ class Roxy:
 
 
 if __name__ == "__main__":
+    logging.info("Starting Roxy application")
     roxy = Roxy()
 
     roxy.initialize_camera()
     roxy.initialize_model("./tmp/models/model.pt")
     roxy.start_up()
     last_notify_time = time.time()
-
+    logging.info("Roxy application initialized successfully")
     while True:
+        logging.info("in loop")
         try:
             frame = roxy.capture_frame()
             label, conf = roxy.classify_frame(frame)
