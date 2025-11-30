@@ -157,6 +157,9 @@ class Roxy:
         """
         Perform startup routine to check if all systems are operational.
         """
+        msg = "startup test"
+        data = {"content": msg}
+        requests.post(self.discord_webhook, data=data, timeout=5)
         self.lock.lock()
         self.lock.unlock()
         dummy_frame = cv2.imread("./test.jpg")
