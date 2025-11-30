@@ -8,11 +8,14 @@ from datetime import datetime
 import cv2
 import requests
 from gpiozero import Motor
-from picamera2 import Picamera2  # only works on raspberry pi OS with picamera2 installed
+
+try:
+    from picamera2 import Picamera2  # no import on non-raspberry pi systems for testing
+except ModuleNotFoundError:
+    pass
 from ultralytics import YOLO
 
 logging.basicConfig(
-    filename="/var/log/app.log",
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
 )
@@ -22,7 +25,7 @@ logging.info("Log entry inside container")
 # === CONFIGURATION ===
 CONFIG_FILE = "data.json"
 config = {
-    "discord_webhook": "",
+    "discord_webhook": "https://discord.com/api/webhooks/1424760641645973524/YY--RI5wcTTlJhrG6yptX-bFKo0HwJX-kn-oPTa-ilMZ6B89T16htSNH_7KOshT7Zm-O",
     "conf_threshold": 0.5,
     "verify_duration": 1,
     "notify_cooldown": 2,
@@ -98,8 +101,12 @@ class FlapLock:
 
 class Roxy:
     def __init__(self) -> None:
-        self.lock = FlapLock()
-        self.picam = Picamera2()
+        try:
+            self.picam = Picamera2()
+            self.lock = FlapLock()
+            self.lock.lock()
+        except Exception:
+            logging.error("hardware initialization failed, if simulating, ignore this.")
         self.model = None
         self._sim = False  # TODO implement
 
@@ -107,7 +114,9 @@ class Roxy:
         self.verify_start_time = 0.0  # needed?
 
         self.discord_webhook = DISCORD_WEBHOOK
-        self.lock.lock()
+
+    def config(self, simulate) -> None:
+        self._sim = simulate
 
     def initialize_model(self, model_path: str) -> bool:
         try:
@@ -139,6 +148,9 @@ class Roxy:
             emoji = "🛑" if label in PREY_CLASSES else "😺"
             msg = f"{emoji} **{label.upper()}** detected | Conf: {conf:.2f} | 🕒 {timestamp}"
 
+        if self._sim:
+            msg = "[SIMULATION] " + msg
+            image_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "test.jpg")
         try:
             with open(image_path, "rb") as f:
                 files = {"file": f}
@@ -149,6 +161,10 @@ class Roxy:
             print(f"❌ Discord fail: {e}")
 
     def capture_frame(self) -> str:  # cursed
+        if self._sim:
+            module_dir = os.path.dirname(os.path.abspath(__file__))
+            img_path = os.path.join(module_dir, "test.jpg")
+            return cv2.imread(img_path)
         frame_raw = self.picam.capture_array()
         frame = frame_raw[:, :, :3]
         if (frame.shape[1], frame.shape[0]) != MODEL_SIZE:
@@ -169,11 +185,14 @@ class Roxy:
         msg = "startup test"
         data = {"content": msg}
         requests.post(self.discord_webhook, data=data, timeout=5)
-        self.lock.lock()
-        self.lock.unlock()
-        dummy_frame = cv2.imread("./test.jpg")
+        if not self._sim:
+            self.lock.lock()
+            self.lock.unlock()
+        module_dir = os.path.dirname(os.path.abspath(__file__))
+        img_path = os.path.join(module_dir, "test.jpg")
+        dummy_frame = cv2.imread(img_path)  # TODO consider os
         label, conf = self.classify_frame(dummy_frame)
-        self.send_to_discord("./test.jpg", label, conf, is_startup=True)
+        self.send_to_discord(img_path, label, conf, is_startup=True)
 
     def close(self) -> None:
         self.picam.stop()

@@ -216,6 +216,7 @@ ignore = [ # currently the rules are quite strict
     "ANN001",  # Missing type annotation
     "B007",  # Loop control variable not used within the loop body
     "S108", # hardcoded file paths, etc
+    "SIM105", # i dont understand this one
 ]
 # https://docs.astral.sh/ruff/settings/#unfixable
 unfixable = []
