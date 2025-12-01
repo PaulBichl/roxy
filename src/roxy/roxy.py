@@ -25,7 +25,7 @@ logging.info("Log entry inside container")
 # === CONFIGURATION ===
 CONFIG_FILE = "data.json"
 config = {
-    "discord_webhook": "https://discord.com/api/webhooks/1424760641645973524/YY--RI5wcTTlJhrG6yptX-bFKo0HwJX-kn-oPTa-ilMZ6B89T16htSNH_7KOshT7Zm-O",
+    "discord_webhook": "https://discord.com/api/webhooks/1424760641645973524/YY--RI5wcTTlJhrG6yptX-bFKo0HwJX-kn-oPTa-ilMZ6B89T16htSNH_7KOshT7Zm-O",  # replace with your webhook
     "conf_threshold": 0.5,
     "verify_duration": 1,
     "notify_cooldown": 2,
@@ -184,7 +184,8 @@ class Roxy:
         """
         msg = "startup test"
         data = {"content": msg}
-        requests.post(self.discord_webhook, data=data, timeout=5)
+        response = requests.post(self.discord_webhook, json=data, timeout=5)  # use json=, not data=
+        print(response.status_code, response.text)  # optional: for debugging
         if not self._sim:
             self.lock.lock()
             self.lock.unlock()
