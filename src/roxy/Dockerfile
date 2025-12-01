@@ -36,6 +36,6 @@ COPY . .
 
 # 8. Setup
 RUN python3 setup.py
-RUN chmod +x motion.py
+RUN chmod +x roxy.py
 
-CMD ["python3", "motion.py"]
+CMD ["python3", "roxy.py"]
