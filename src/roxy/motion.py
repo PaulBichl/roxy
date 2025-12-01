@@ -187,29 +187,28 @@ def main() -> None:
 
             if (current_time - verify_start_time) >= VERIFY_DURATION:
                 if label in PREY_CLASSES:
-                    if (current_time - last_notify_time) > NOTIFY_COOLDOWN:
-                        last_notify_time = current_time
-                        cv2.imwrite(IMAGE_PATH, frame)
-                        send_to_discord(IMAGE_PATH, label, conf)
-
+                    # only notify/act when confidence meets threshold
                     if conf >= CONF_THRESHOLD:
+                        if (current_time - last_notify_time) > NOTIFY_COOLDOWN:
+                            last_notify_time = current_time
+                            cv2.imwrite(IMAGE_PATH, frame)
+                            send_to_discord(IMAGE_PATH, label, conf)
                         # locking door
                         lock.lock()
 
                 elif label in SAFE_CLASSES:
-                    if (current_time - last_notify_time) > NOTIFY_COOLDOWN:
-                        last_notify_time = current_time
-                        cv2.imwrite(IMAGE_PATH, frame)
-                        send_to_discord(IMAGE_PATH, label, conf)
-
+                    # only notify/act when confidence meets threshold
                     if conf >= CONF_THRESHOLD:
+                        if (current_time - last_notify_time) > NOTIFY_COOLDOWN:
+                            last_notify_time = current_time
+                            cv2.imwrite(IMAGE_PATH, frame)
+                            send_to_discord(IMAGE_PATH, label, conf)
                         lock.unlock()
 
                 else:
                     # background detected — ensure locked
                     if (current_time - LAST_ACTION_TIME) > ACTION_DEBOUNCE:
                         lock.lock()
-
     except KeyboardInterrupt:
         print("\n👋 Exiting...")
     finally:
