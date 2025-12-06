@@ -107,17 +107,26 @@ class Roxy:
 
         self.discord_webhook = DISCORD_WEBHOOK
 
-    def config(self, simulate: bool, discord_webhook: str, conf_threshold: float) -> None:
+    def config(self, simulate: bool = False, discord_webhook: str = "", conf_threshold: float = 0.5) -> None:
         self._sim = simulate
         self.discord_webhook = discord_webhook
         self.conf_threshold = conf_threshold
 
     def load_config(self, config_path: str) -> None:
         with open(config_path, encoding="utf-8") as f:
-            config = json.load(f)
+            cfg = json.load(f)
 
-        # pass loaded config directly into config()
-        self.config(**config)
+        # Safely extract with error visibility
+        try:
+            self.config(
+                simulate=cfg["simulate"],
+                discord_webhook=cfg["discord_webhook"],
+                conf_threshold=cfg["conf_threshold"],
+            )
+        except KeyError as e:
+            missing = str(e).replace("'", "")
+            msg = f"Missing required config key: '{missing}' in {config_path}"
+            raise Exception(msg) from e
 
     def initialize_model(self, model_path: str) -> bool:
         try:
