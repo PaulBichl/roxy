@@ -27,7 +27,6 @@ CONFIG_FILE = "data.json"
 config = {
     "discord_webhook": "https://discord.com/api/webhooks/1424760641645973524/YY--RI5wcTTlJhrG6yptX-bFKo0HwJX-kn-oPTa-ilMZ6B89T16htSNH_7KOshT7Zm-O",  # replace with your webhook
     "conf_threshold": 0.5,
-    "verify_duration": 1,
     "notify_cooldown": 2,
     "image_path": "/tmp/motion.jpg",
     "lock_state": "UNLOCKED",
@@ -44,20 +43,12 @@ if os.path.exists(CONFIG_FILE):
 # Global values (use lowercase keys from defaults/data.json) TODO refctor
 DISCORD_WEBHOOK = config.get("discord_webhook", "")
 CONF_THRESHOLD = config.get("conf_threshold", 0.5)
-VERIFY_DURATION = config.get("verify_duration", 1)
 NOTIFY_COOLDOWN = config.get("notify_cooldown", 2)
 IMAGE_PATH = config.get("image_path", "/tmp/motion.jpg")
 LOCK_STATE = config.get("lock_state", "UNLOCKED").upper()
 LOCK_OVERRIDE = config.get("lock_override", False)
 
-ACTION_DEBOUNCE = 1.0
-ACTUATION_DURATION = 0.5
 MODEL_SIZE = [640, 640]  # change to IMAGE_SIZE ?
-# track current lock state in runtime to avoid redundant motor commands
-CURRENT_LOCK_STATE = LOCK_STATE
-
-# track last attempted motor action to debounce attempts
-LAST_ACTION_TIME = 0.0
 
 SAFE_CLASSES = ["cat"]
 # treat background as a locking condition as requested
@@ -71,6 +62,7 @@ class FlapLock:
         self.motor = Motor(forward=6, backward=5)
         self.lock_state = ""  # TODO replace with enum
         self.last_action_time = 0.0
+        self.action_duration = 0.5
 
     def lock(self) -> None:
         if LOCK_OVERRIDE:
@@ -80,7 +72,7 @@ class FlapLock:
             # no action required
             return
         self.motor.forward()
-        time.sleep(ACTUATION_DURATION)
+        time.sleep(self.action_duration)
         self.motor.stop()
         self.lock_state = "LOCKED"
         self.last_action_time = time.time()
@@ -93,7 +85,7 @@ class FlapLock:
             # no action required
             return
         self.motor.backward()
-        time.sleep(ACTUATION_DURATION)
+        time.sleep(self.action_duration)
         self.motor.stop()
         self.lock_state = "UNLOCKED"
         self.last_action_time = time.time()
@@ -115,8 +107,17 @@ class Roxy:
 
         self.discord_webhook = DISCORD_WEBHOOK
 
-    def config(self, simulate) -> None:
+    def config(self, simulate: bool, discord_webhook: str, conf_threshold: float) -> None:
         self._sim = simulate
+        self.discord_webhook = discord_webhook
+        self.conf_threshold = conf_threshold
+
+    def load_config(self, config_path: str) -> None:
+        with open(config_path, encoding="utf-8") as f:
+            config = json.load(f)
+
+        # pass loaded config directly into config()
+        self.config(**config)
 
     def initialize_model(self, model_path: str) -> bool:
         try:
