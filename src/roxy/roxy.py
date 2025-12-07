@@ -111,7 +111,11 @@ class Roxy:
 
     def initialize_model(self, model_path: str) -> bool:
         try:
-            self.model = YOLO(model_path)
+            if model_path.endswith((".pt", "_ncnn_model")):
+                self.model = YOLO(model_path, task="classify")
+            else:
+                msg = "Unsupported model format"
+                raise ValueError(msg)
             return True
         except Exception:
             print("Failed to load the model")

@@ -2,7 +2,8 @@ from roxy import Roxy
 
 roxy = Roxy()
 roxy.load_config("tests/config.json")
-roxy.initialize_model("./tmp/models/model.pt")
+# roxy.initialize_model("./tmp/models/model.pt")
+roxy.initialize_model("./tmp/models/model_ncnn_model")
 roxy.start_up()
 print("Roxy initialized for testing with simulation mode.")
 
