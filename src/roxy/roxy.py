@@ -120,9 +120,10 @@ class Roxy:
                 msg = "Unsupported model format"
                 raise ValueError(msg)
             return True
-        except Exception:
-            print("Failed to load the model")
-            return False
+        except Exception as e:
+            logging.error("Model Init Failed")
+            msg = "Model Init Failed"
+            raise Exception(msg) from e
 
     def initialize_camera(self) -> bool:
         try:
@@ -134,9 +135,10 @@ class Roxy:
             logging.info("Camera initialized")
             return True
 
-        except Exception:
-            print("Camera Init Failed")
-            return False
+        except Exception as e:
+            logging.error("Camera Init Failed")
+            msg = "Camera Init Failed"
+            raise Exception(msg) from e
 
     def send_to_discord(self, image_path: str, label: str, conf: float = 0.0, is_startup: bool = False) -> None:
         if not self.discord_webhook:
@@ -157,9 +159,11 @@ class Roxy:
                 files = {"file": f}
                 data = {"content": msg}
                 requests.post(self.discord_webhook, data=data, files=files, timeout=5)
-                print("✅ Discord sent")
+                logging.info("Discord notification sent")
         except Exception as e:
-            print(f"❌ Discord fail: {e}")
+            logging.error(f"Failed to send Discord notification: {e!s}")
+            msg = "Failed to send Discord notification"
+            raise Exception(msg) from e
 
     def capture_frame(self) -> str:  # cursed
         if self._sim:
@@ -187,8 +191,8 @@ class Roxy:
         """
         msg = "startup test"
         data = {"content": msg}
-        response = requests.post(self.discord_webhook, json=data, timeout=5)  # use json=, not data=
-        print(response.status_code, response.text)  # optional: for debugging
+        requests.post(self.discord_webhook, json=data, timeout=5)  # use json=, not data=
+        logging.debug("response from discord webhook: {response!s}")
         if not self._sim:
             self.lock.lock()
             self.lock.unlock()
@@ -233,8 +237,9 @@ if __name__ == "__main__":
                 roxy.lock.lock()
 
         except KeyboardInterrupt:
-            print("\n👋 Exiting...")
+            logging.info("Keyboard interrupt received, shutting down.")
             roxy.close()
             break
         except Exception as e:
-            print(f"⚠️ Runtime error: {e}")
+            logging.error(f"Error in main loop: {e!s}")
+            time.sleep(5)
