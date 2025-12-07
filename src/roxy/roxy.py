@@ -16,7 +16,7 @@ except ModuleNotFoundError:
 from ultralytics import YOLO
 
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.DEBUG,  # TODO change to INFO for production
     format="%(asctime)s [%(levelname)s] %(message)s",
 )
 
