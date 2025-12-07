@@ -34,6 +34,10 @@ IGNORED_CLASSES = ["background"]
 
 # === HARDWARE ===
 class FlapLock:
+    """
+    class ton control motorized lock for cat flap
+    """
+
     def __init__(self) -> None:
         self.motor = Motor(forward=6, backward=5)
         self.lock_state = ""  # TODO replace with enum
@@ -124,7 +128,7 @@ class Roxy:
             print("Camera Init Failed")
             return False
 
-    def send_to_discord(self, image_path, label="", conf=0.0, is_startup=False) -> None:
+    def send_to_discord(self, image_path: str, label: str, conf: float = 0.0, is_startup: bool = False) -> None:
         if not self.discord_webhook:
             return
         timestamp = datetime.now().strftime("%H:%M:%S")
