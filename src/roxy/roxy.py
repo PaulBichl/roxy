@@ -167,10 +167,12 @@ class Roxy:
         return frame
 
     def classify_frame(self, frame) -> tuple[str, float]:
+        start_time = time.time()
         results = self.model(frame, verbose=False)
         top1_index = results[0].probs.top1
         conf = results[0].probs.top1conf.item()
         label = results[0].names[top1_index]
+        logging.info(f"Classification: {label} ({conf:.2f}) in {time.time() - start_time:.2f}s")
         return label, conf
 
     def start_up(self) -> None:
@@ -199,9 +201,9 @@ class Roxy:
 if __name__ == "__main__":
     logging.info("Starting Roxy application")
     roxy = Roxy()
-
+    roxy.load_config("./config.json")
     roxy.initialize_camera()
-    roxy.initialize_model("./tmp/models/model.pt")
+    roxy.initialize_model("./tmp/models/model_ncnn_model")
     roxy.start_up()
     last_notify_time = time.time()
     logging.info("Roxy application initialized successfully")
