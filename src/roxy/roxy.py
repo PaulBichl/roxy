@@ -22,7 +22,7 @@ logging.basicConfig(
 
 logging.info("Log entry inside container")
 # Global values (use lowercase keys from defaults/data.json) TODO refctor
-LOCK_OVERRIDE = False  # for testing without hardware => remove ?
+LOCK_OVERRIDE = True  # for testing without hardware => remove ?
 MODEL_SIZE = [640, 640]  # change to IMAGE_SIZE ?
 IMAGE_PATH = "/tmp/motion.jpg"
 
