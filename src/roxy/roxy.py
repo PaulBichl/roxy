@@ -148,10 +148,9 @@ class Roxy:
         timestamp = datetime.now().strftime("%H:%M:%S")
 
         if is_startup:
-            msg = f"🚀 **System Online** at {timestamp} | Picamera2 Mode"
+            msg = f"start up at {timestamp} | Picamera2 Mode"
         else:
-            emoji = "🛑" if label in PREY_CLASSES else "😺"
-            msg = f"{emoji} **{label.upper()}** detected | Conf: {conf:.2f} | 🕒 {timestamp}"
+            msg = f"**{label.upper()}** detected | Conf: {conf:.2f} | {timestamp}"
 
         if self._sim:
             msg = "[SIMULATION] " + msg
@@ -191,10 +190,6 @@ class Roxy:
         """
         Perform startup routine to check if all systems are operational.
         """
-        msg = "startup test"
-        data = {"content": msg}
-        requests.post(self.discord_webhook, json=data, timeout=5)  # use json=, not data=
-        logging.debug("response from discord webhook: {response!s}")
         if not self._sim:
             self.lock.lock()
             self.lock.unlock()
