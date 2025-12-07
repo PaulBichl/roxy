@@ -45,6 +45,7 @@ class FlapLock:
         self.action_duration = 0.5
 
     def lock(self) -> None:
+        logging.info("Locking flap")
         if LOCK_OVERRIDE:
             return
         # avoid redundant locking
@@ -58,6 +59,7 @@ class FlapLock:
         self.last_action_time = time.time()
 
     def unlock(self) -> None:
+        logging.info("Unlocking flap")
         if LOCK_OVERRIDE:
             return
         # avoid redundant locking
@@ -110,6 +112,7 @@ class Roxy:
             raise Exception(msg) from e
 
     def initialize_model(self, model_path: str) -> bool:
+        logging.info(f"Loading model from {model_path}")
         try:
             if model_path.endswith((".pt", "_ncnn_model")):
                 self.model = YOLO(model_path, task="classify")
@@ -128,6 +131,9 @@ class Roxy:
             )  # i dont understand this, @Isabell pls explain
             self.picam.configure(config)
             self.picam.start()
+            logging.info("Camera initialized")
+            return True
+
         except Exception:
             print("Camera Init Failed")
             return False
@@ -193,6 +199,7 @@ class Roxy:
         self.send_to_discord(img_path, label, conf, is_startup=True)
 
     def close(self) -> None:
+        logging.info("Closing Roxy application")
         self.picam.stop()
         # close motor??
         self.lock.motor.close()
