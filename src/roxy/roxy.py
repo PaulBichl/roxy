@@ -21,43 +21,10 @@ logging.basicConfig(
 )
 
 logging.info("Log entry inside container")
-
-# === CONFIGURATION ===
-CONFIG_FILE = "data.json"
-config = {
-    "discord_webhook": "https://discord.com/api/webhooks/1424760641645973524/YY--RI5wcTTlJhrG6yptX-bFKo0HwJX-kn-oPTa-ilMZ6B89T16htSNH_7KOshT7Zm-O",  # replace with your webhook
-    "conf_threshold": 0.5,
-    "verify_duration": 1,
-    "notify_cooldown": 2,
-    "image_path": "/tmp/motion.jpg",
-    "lock_state": "UNLOCKED",
-    "lock_override": False,
-}
-
-if os.path.exists(CONFIG_FILE):
-    try:
-        with open(CONFIG_FILE) as f:
-            config.update(json.load(f))
-    except Exception as e:
-        print(f"⚠️ Error reading config: {e}")
-
 # Global values (use lowercase keys from defaults/data.json) TODO refctor
-DISCORD_WEBHOOK = config.get("discord_webhook", "")
-CONF_THRESHOLD = config.get("conf_threshold", 0.5)
-VERIFY_DURATION = config.get("verify_duration", 1)
-NOTIFY_COOLDOWN = config.get("notify_cooldown", 2)
-IMAGE_PATH = config.get("image_path", "/tmp/motion.jpg")
-LOCK_STATE = config.get("lock_state", "UNLOCKED").upper()
-LOCK_OVERRIDE = config.get("lock_override", False)
-
-ACTION_DEBOUNCE = 1.0
-ACTUATION_DURATION = 0.5
+LOCK_OVERRIDE = False  # for testing without hardware => remove ?
 MODEL_SIZE = [640, 640]  # change to IMAGE_SIZE ?
-# track current lock state in runtime to avoid redundant motor commands
-CURRENT_LOCK_STATE = LOCK_STATE
-
-# track last attempted motor action to debounce attempts
-LAST_ACTION_TIME = 0.0
+IMAGE_PATH = "/tmp/motion.jpg"
 
 SAFE_CLASSES = ["cat"]
 # treat background as a locking condition as requested
@@ -67,10 +34,15 @@ IGNORED_CLASSES = ["background"]
 
 # === HARDWARE ===
 class FlapLock:
+    """
+    class ton control motorized lock for cat flap
+    """
+
     def __init__(self) -> None:
         self.motor = Motor(forward=6, backward=5)
         self.lock_state = ""  # TODO replace with enum
         self.last_action_time = 0.0
+        self.action_duration = 0.5
 
     def lock(self) -> None:
         if LOCK_OVERRIDE:
@@ -80,7 +52,7 @@ class FlapLock:
             # no action required
             return
         self.motor.forward()
-        time.sleep(ACTUATION_DURATION)
+        time.sleep(self.action_duration)
         self.motor.stop()
         self.lock_state = "LOCKED"
         self.last_action_time = time.time()
@@ -93,7 +65,7 @@ class FlapLock:
             # no action required
             return
         self.motor.backward()
-        time.sleep(ACTUATION_DURATION)
+        time.sleep(self.action_duration)
         self.motor.stop()
         self.lock_state = "UNLOCKED"
         self.last_action_time = time.time()
@@ -112,15 +84,38 @@ class Roxy:
 
         self.last_notify_time = 0.0
         self.verify_start_time = 0.0  # needed?
+        self.notify_cooldown = 10.0  # seconds
 
-        self.discord_webhook = DISCORD_WEBHOOK
+        self.discord_webhook = ""
 
-    def config(self, simulate) -> None:
+    def config(self, simulate: bool = False, discord_webhook: str = "", conf_threshold: float = 0.5) -> None:
         self._sim = simulate
+        self.discord_webhook = discord_webhook
+        self.conf_threshold = conf_threshold
+
+    def load_config(self, config_path: str) -> None:
+        with open(config_path, encoding="utf-8") as f:
+            cfg = json.load(f)
+
+        # Safely extract with error visibility
+        try:
+            self.config(
+                simulate=cfg["simulate"],
+                discord_webhook=cfg["discord_webhook"],
+                conf_threshold=cfg["conf_threshold"],
+            )
+        except KeyError as e:
+            missing = str(e).replace("'", "")
+            msg = f"Missing required config key: '{missing}' in {config_path}"
+            raise Exception(msg) from e
 
     def initialize_model(self, model_path: str) -> bool:
         try:
-            self.model = YOLO(model_path)
+            if model_path.endswith((".pt", "_ncnn_model")):
+                self.model = YOLO(model_path, task="classify")
+            else:
+                msg = "Unsupported model format"
+                raise ValueError(msg)
             return True
         except Exception:
             print("Failed to load the model")
@@ -137,7 +132,7 @@ class Roxy:
             print("Camera Init Failed")
             return False
 
-    def send_to_discord(self, image_path, label="", conf=0.0, is_startup=False) -> None:
+    def send_to_discord(self, image_path: str, label: str, conf: float = 0.0, is_startup: bool = False) -> None:
         if not self.discord_webhook:
             return
         timestamp = datetime.now().strftime("%H:%M:%S")
@@ -172,10 +167,12 @@ class Roxy:
         return frame
 
     def classify_frame(self, frame) -> tuple[str, float]:
-        results = self.model(frame, verbose=False, conf=CONF_THRESHOLD)
+        start_time = time.time()
+        results = self.model(frame, verbose=False)
         top1_index = results[0].probs.top1
         conf = results[0].probs.top1conf.item()
         label = results[0].names[top1_index]
+        logging.info(f"Classification: {label} ({conf:.2f}) in {time.time() - start_time:.2f}s")
         return label, conf
 
     def start_up(self) -> None:
@@ -204,9 +201,9 @@ class Roxy:
 if __name__ == "__main__":
     logging.info("Starting Roxy application")
     roxy = Roxy()
-
+    roxy.load_config("./config.json")
     roxy.initialize_camera()
-    roxy.initialize_model("./tmp/models/model.pt")
+    roxy.initialize_model("./tmp/models/model_ncnn_model")
     roxy.start_up()
     last_notify_time = time.time()
     logging.info("Roxy application initialized successfully")
@@ -215,12 +212,12 @@ if __name__ == "__main__":
         try:
             frame = roxy.capture_frame()
             label, conf = roxy.classify_frame(frame)
-            if (time.time() - last_notify_time) > NOTIFY_COOLDOWN:
+            if (time.time() - last_notify_time) > roxy.notify_cooldown:
                 last_notify_time = time.time()
                 cv2.imwrite(IMAGE_PATH, frame)
                 roxy.send_to_discord(IMAGE_PATH, label, conf)
 
-            if conf >= CONF_THRESHOLD and label in SAFE_CLASSES:
+            if conf >= roxy.conf_threshold and label in SAFE_CLASSES:
                 roxy.lock.unlock()
                 time.sleep(30)  # keep unlocked for 30 seconds so cats can get inside
                 roxy.lock.lock()
