@@ -1,0 +1,74 @@
+============================================================
+SETUP INSTRUCTIONS FOR LISTENING SERVER
+============================================================
+
+1. SETUP VIRTUAL ENVIRONMENT
+------------------------------------------------------------
+Create the environment:
+    python3 -m venv .roxy
+
+Activate it:
+    source .roxy/bin/activate
+
+Install dependencies:
+    pip install docker flask
+
+Exit environment (when done):
+    deactivate
+
+============================================================
+2. CREATE SYSTEM SERVICE (AUTO-START ON BOOT)
+============================================================
+
+Create the service file:
+    sudo nano /etc/systemd/system/listening_server.service
+
+Paste the following configuration:
+------------------------------------------------------------
+[Unit]
+Description=Website listening server for Docker controller
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=p5
+WorkingDirectory=/home/p5/roxy/src/roxy_website/
+ExecStart=/home/p5/roxy/src/roxy_website/.roxy/bin/python /home/p5/roxy/src/roxy_website/listening_server.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+------------------------------------------------------------
+
+Save and Exit:
+    CTRL+O, Enter, CTRL+X
+
+============================================================
+3. ENABLE AND START
+============================================================
+
+Reload systemd to see the new file:
+    sudo systemctl daemon-reload
+
+Enable it to start on boot:
+    sudo systemctl enable listening_server.service
+
+Start it immediately without rebooting:
+    sudo systemctl start listening_server.service
+
+Check status (verify it works):
+    sudo systemctl status listening_server.service
+
+============================================================
+CHEAT SHEET COMMANDS
+============================================================
+
+To STOP the server immediately:
+    sudo systemctl stop listening_server.service
+
+To RESTART (after changing python code):
+    sudo systemctl restart listening_server.service
+
+To VIEW LOGS (if it crashes):
+    sudo journalctl -u listening_server.service -f
