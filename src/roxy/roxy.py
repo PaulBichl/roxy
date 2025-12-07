@@ -182,7 +182,7 @@ class Roxy:
         top1_index = results[0].probs.top1
         conf = results[0].probs.top1conf.item()
         label = results[0].names[top1_index]
-        logging.info(f"Classification: {label} ({conf:.2f}) in {time.time() - start_time:.2f}s")
+        logging.debug(f"Classification: {label} ({conf:.2f}) in {time.time() - start_time:.2f}s")
         return label, conf
 
     def start_up(self) -> None:
@@ -220,7 +220,7 @@ if __name__ == "__main__":
     last_notify_time = time.time()
     logging.info("Roxy application initialized successfully")
     while True:
-        logging.info("in loop")
+        logging.debug("in loop")
         try:
             frame = roxy.capture_frame()
             label, conf = roxy.classify_frame(frame)
