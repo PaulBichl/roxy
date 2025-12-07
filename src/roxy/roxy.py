@@ -22,7 +22,7 @@ logging.basicConfig(
 
 logging.info("Log entry inside container")
 # Global values (use lowercase keys from defaults/data.json) TODO refctor
-LOCK_OVERRIDE = True  # for testing without hardware => remove ?
+LOCK_OVERRIDE = False  # for testing without hardware => remove ?
 MODEL_SIZE = [640, 640]  # change to IMAGE_SIZE ?
 IMAGE_PATH = "/tmp/motion.jpg"
 
@@ -206,7 +206,7 @@ class Roxy:
         logging.info("Closing Roxy application")
         self.picam.stop()
         # close motor??
-        self.lock.motor.close()
+        self.lock.unlock()  # make suree that lock is open on exit
 
 
 if __name__ == "__main__":
@@ -216,7 +216,7 @@ if __name__ == "__main__":
     roxy.initialize_camera()
     roxy.initialize_model("./tmp/models/model_ncnn_model")
     roxy.start_up()
-    roxy.lock.lock()
+    # roxy.lock.lock()
     last_notify_time = time.time()
     logging.info("Roxy application initialized successfully")
     while True:
