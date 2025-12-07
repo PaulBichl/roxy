@@ -47,6 +47,7 @@ class FlapLock:
     def lock(self) -> None:
         logging.info("Locking flap")
         if LOCK_OVERRIDE:
+            logging.debug("Lock override active, skipping lock action")
             return
         # avoid redundant locking
         if self.lock_state == "LOCKED":
@@ -61,6 +62,7 @@ class FlapLock:
     def unlock(self) -> None:
         logging.info("Unlocking flap")
         if LOCK_OVERRIDE:
+            logging.debug("Lock override active, skipping unlock action")
             return
         # avoid redundant locking
         if self.lock_state == "UNLOCKED":
