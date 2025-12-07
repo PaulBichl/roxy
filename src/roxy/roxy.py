@@ -218,23 +218,29 @@ if __name__ == "__main__":
     roxy.start_up()
     roxy.lock.lock()
     last_notify_time = time.time()
+    last_unlock_time = time.time()
     logging.info("Roxy application initialized successfully")
     while True:
         logging.debug("in loop")
         try:
             frame = roxy.capture_frame()
             label, conf = roxy.classify_frame(frame)
+            # we want to send gether more data, so we send every notify_cooldown seconds
             if (time.time() - last_notify_time) > roxy.notify_cooldown:
                 last_notify_time = time.time()
                 cv2.imwrite(IMAGE_PATH, frame)
                 if label not in IGNORED_CLASSES:
                     roxy.send_to_discord(IMAGE_PATH, label, conf)
-
+            # locking logic, default: locked
             if conf >= roxy.conf_threshold and label in SAFE_CLASSES:
-                roxy.lock.unlock()
-                logging.info("Flap unlocked for safe class")
-                time.sleep(30)  # keep unlocked for 30 seconds so cats can get inside
+                if last_unlock_time is None:  # only unlock once
+                    roxy.lock.unlock()
+                    logging.info("Flap unlocked for safe class")
+                last_unlock_time = time.time()
+            if last_unlock_time is not None and time.time() - last_unlock_time > 30:  # cant be elif
                 roxy.lock.lock()
+                last_unlock_time = None
+                logging.info("Flap locked after timeout")
 
         except KeyboardInterrupt:
             logging.info("Keyboard interrupt received, shutting down.")
@@ -242,4 +248,3 @@ if __name__ == "__main__":
             break
         except Exception as e:
             logging.error(f"Error in main loop: {e!s}")
-            time.sleep(5)
