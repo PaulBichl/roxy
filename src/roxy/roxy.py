@@ -205,6 +205,7 @@ if __name__ == "__main__":
     roxy.initialize_camera()
     roxy.initialize_model("./tmp/models/model_ncnn_model")
     roxy.start_up()
+    roxy.lock.lock()
     last_notify_time = time.time()
     logging.info("Roxy application initialized successfully")
     while True:
@@ -215,10 +216,12 @@ if __name__ == "__main__":
             if (time.time() - last_notify_time) > roxy.notify_cooldown:
                 last_notify_time = time.time()
                 cv2.imwrite(IMAGE_PATH, frame)
-                roxy.send_to_discord(IMAGE_PATH, label, conf)
+                if label not in IGNORED_CLASSES:
+                    roxy.send_to_discord(IMAGE_PATH, label, conf)
 
             if conf >= roxy.conf_threshold and label in SAFE_CLASSES:
                 roxy.lock.unlock()
+                logging.info("Flap unlocked for safe class")
                 time.sleep(30)  # keep unlocked for 30 seconds so cats can get inside
                 roxy.lock.lock()
 
