@@ -22,7 +22,7 @@ logging.basicConfig(
 
 logging.info("Log entry inside container")
 # Global values (use lowercase keys from defaults/data.json) TODO refctor
-LOCK_OVERRIDE = True  # for testing without hardware => remove ?
+LOCK_OVERRIDE = True  # for testing without engaging hardware => remove ?
 MODEL_SIZE = [640, 640]  # change to IMAGE_SIZE ?
 IMAGE_PATH = "/tmp/motion.jpg"
 
@@ -40,7 +40,7 @@ class FlapLock:
 
     def __init__(self) -> None:
         self.motor = Motor(forward=6, backward=5)
-        self.lock_state = ""  # TODO replace with enum
+        self.lock_state = ""
         self.last_action_time = 0.0
         self.action_duration = 0.5
 
