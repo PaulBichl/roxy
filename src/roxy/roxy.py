@@ -114,6 +114,10 @@ class Roxy:
             raise Exception(msg) from e
 
     def initialize_model(self, model_path: str) -> None:
+        """
+        loads model from given path
+        supports .pt and ncnn models
+        """
         logging.info(f"Loading model from {model_path}")
         try:
             if model_path.endswith((".pt", "_ncnn_model")):
@@ -140,6 +144,10 @@ class Roxy:
             raise Exception(msg) from e
 
     def send_to_discord(self, image_path: str, label: str, conf: float = 0.0, is_startup: bool = False) -> None:
+        """
+        Send notification to discord webhook with image attachment
+        if is_startup, send startup message instead of classification
+        """
         if not self.discord_webhook:
             return
         timestamp = datetime.now().strftime("%H:%M:%S")
@@ -164,6 +172,9 @@ class Roxy:
             raise Exception(msg) from e
 
     def capture_frame(self) -> str:  # cursed
+        """
+        Capture frame from camera and prepare for classification, if in sim mode return test image
+        """
         if self._sim:
             module_dir = os.path.dirname(os.path.abspath(__file__))
             img_path = os.path.join(module_dir, "test.jpg")
@@ -175,6 +186,10 @@ class Roxy:
         return frame
 
     def classify_frame(self, frame) -> tuple[str, float]:
+        """
+        Classify frame using loaded model
+        returns label and confidence
+        """
         start_time = time.time()
         results = self.model(frame, verbose=False)
         top1_index = results[0].probs.top1
@@ -192,11 +207,14 @@ class Roxy:
             self.lock.unlock()
         module_dir = os.path.dirname(os.path.abspath(__file__))
         img_path = os.path.join(module_dir, "test.jpg")
-        dummy_frame = cv2.imread(img_path)  # TODO consider os
+        dummy_frame = cv2.imread(img_path)
         label, conf = self.classify_frame(dummy_frame)
         self.send_to_discord(img_path, label, conf, is_startup=True)
 
     def close(self) -> None:
+        """
+        stops camera and unlocks flap on exit
+        """
         logging.info("Closing Roxy application")
         self.picam.stop()
         # close motor??
