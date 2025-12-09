@@ -113,7 +113,7 @@ class Roxy:
             msg = f"Missing required config key: '{missing}' in {config_path}"
             raise Exception(msg) from e
 
-    def initialize_model(self, model_path: str) -> bool:
+    def initialize_model(self, model_path: str) -> None:
         logging.info(f"Loading model from {model_path}")
         try:
             if model_path.endswith((".pt", "_ncnn_model")):
@@ -121,13 +121,12 @@ class Roxy:
             else:
                 msg = "Unsupported model format"
                 raise ValueError(msg)
-            return True
         except Exception as e:
             logging.error("Model Init Failed")
             msg = "Model Init Failed"
             raise Exception(msg) from e
 
-    def initialize_camera(self) -> bool:
+    def initialize_camera(self) -> None:
         try:
             config = self.picam.create_preview_configuration(
                 main={"size": MODEL_SIZE, "format": "XBGR8888"},
@@ -135,8 +134,6 @@ class Roxy:
             self.picam.configure(config)
             self.picam.start()
             logging.info("Camera initialized")
-            return True
-
         except Exception as e:
             logging.error("Camera Init Failed")
             msg = "Camera Init Failed"
