@@ -85,21 +85,32 @@ class Roxy:
 
         self.discord_webhook = ""
 
-    def config(self, simulate: bool = False, discord_webhook: str = "", conf_threshold: float = 0.5) -> None:
+    def config(
+        self,
+        simulate: bool = False,
+        discord_webhook: str = "",
+        conf_threshold: float = 0.5,
+        lock_override: bool = True,
+    ) -> None:
         self._sim = simulate
-        self.discord_webhook = discord_webhook
+        self.discord_webhook = discord_webhook  # no default webhook possible
         self.conf_threshold = conf_threshold
+        global LOCK_OVERRIDE  # noqa: PLW0603
+        if lock_override != LOCK_OVERRIDE:  # this should only be engaged after changing the config via webinterface
+            LOCK_OVERRIDE = lock_override
 
-    def load_config(self, config_path: str) -> None:
+    def load_config(self, config_path: str = "./config.json") -> None:
+        """
+        Extract info from config file and call config()
+        """
         with open(config_path, encoding="utf-8") as f:
             cfg = json.load(f)
-
-        # Safely extract with error visibility
         try:
             self.config(
                 simulate=cfg["simulate"],
                 discord_webhook=cfg["discord_webhook"],
                 conf_threshold=cfg["conf_threshold"],
+                lock_override=cfg["lock_override"],
             )
         except KeyError as e:
             missing = str(e).replace("'", "")
