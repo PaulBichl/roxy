@@ -41,38 +41,31 @@ class FlapLock:
     def __init__(self) -> None:
         self.motor = Motor(forward=6, backward=5)
         self.lock_state = ""
-        self.last_action_time = 0.0
-        self.action_duration = 0.5
+        self.action_duration = 0.5  # time the motor runs to fully lock/unlock
 
     def lock(self) -> None:
         logging.info("Locking flap")
         if LOCK_OVERRIDE:
             logging.debug("Lock override active, skipping lock action")
             return
-        # avoid redundant locking
-        if self.lock_state == "LOCKED":
-            # no action required
+        if self.lock_state == "LOCKED":  # avoid redundant locking
             return
         self.motor.forward()
         time.sleep(self.action_duration)
         self.motor.stop()
         self.lock_state = "LOCKED"
-        self.last_action_time = time.time()
 
     def unlock(self) -> None:
         logging.info("Unlocking flap")
         if LOCK_OVERRIDE:
             logging.debug("Lock override active, skipping unlock action")
             return
-        # avoid redundant locking
-        if self.lock_state == "UNLOCKED":
-            # no action required
+        if self.lock_state == "UNLOCKED":  # avoid redundant locking
             return
         self.motor.backward()
         time.sleep(self.action_duration)
         self.motor.stop()
         self.lock_state = "UNLOCKED"
-        self.last_action_time = time.time()
 
 
 class Roxy:
