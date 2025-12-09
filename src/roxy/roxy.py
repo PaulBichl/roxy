@@ -228,6 +228,7 @@ if __name__ == "__main__":
             cv2.imwrite(IMAGE_PATH, frame)
             if label not in IGNORED_CLASSES:
                 roxy.send_to_discord(IMAGE_PATH, label, conf)
+                logging.info(f"Notification sent for {label} with confidence {conf:.2f}")
             # locking logic, default: locked
             if conf >= roxy.conf_threshold and label in SAFE_CLASSES:
                 if last_unlock_time is None:  # only unlock once
