@@ -222,12 +222,12 @@ if __name__ == "__main__":
         try:
             frame = roxy.capture_frame()
             label, conf = roxy.classify_frame(frame)
-            # we want to send gether more data, so we send every notify_cooldown seconds
-            if (time.time() - last_notify_time) > roxy.notify_cooldown:
-                last_notify_time = time.time()
-                cv2.imwrite(IMAGE_PATH, frame)
-                if label not in IGNORED_CLASSES:
-                    roxy.send_to_discord(IMAGE_PATH, label, conf)
+            # removed notoify cooldown for now #TODO reevaluate
+            # if (time.time() - last_notify_time) > roxy.notify_cooldown:
+            #     last_notify_time = time.time()
+            cv2.imwrite(IMAGE_PATH, frame)
+            if label not in IGNORED_CLASSES:
+                roxy.send_to_discord(IMAGE_PATH, label, conf)
             # locking logic, default: locked
             if conf >= roxy.conf_threshold and label in SAFE_CLASSES:
                 if last_unlock_time is None:  # only unlock once
