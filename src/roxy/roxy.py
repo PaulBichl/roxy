@@ -88,7 +88,7 @@ class Roxy:
 
         self.last_notify_time = 0.0
         self.verify_start_time = 0.0  # needed?
-        self.notify_cooldown = 10.0  # seconds
+        self.notify_cooldown = 1.0  # seconds
 
         self.discord_webhook = ""
 
@@ -223,12 +223,12 @@ if __name__ == "__main__":
             frame = roxy.capture_frame()
             label, conf = roxy.classify_frame(frame)
             # removed notoify cooldown for now #TODO reevaluate
-            # if (time.time() - last_notify_time) > roxy.notify_cooldown:
-            #     last_notify_time = time.time()
-            cv2.imwrite(IMAGE_PATH, frame)
-            if label not in IGNORED_CLASSES:
-                roxy.send_to_discord(IMAGE_PATH, label, conf)
-                logging.info(f"Notification sent for {label} with confidence {conf:.2f}")
+            if (time.time() - last_notify_time) > roxy.notify_cooldown:
+                last_notify_time = time.time()
+                cv2.imwrite(IMAGE_PATH, frame)
+                if label not in IGNORED_CLASSES:
+                    roxy.send_to_discord(IMAGE_PATH, label, conf)
+                    logging.info(f"Notification sent for {label} with confidence {conf:.2f}")
             # locking logic, default: locked
             if conf >= roxy.conf_threshold and label in SAFE_CLASSES:
                 if last_unlock_time is None:  # only unlock once
