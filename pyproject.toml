@@ -95,6 +95,7 @@ dependencies = [ # add your production dependencies here
     "ncnn", # ncnn used for optimized model deployment
     "opencv-python", # used for camera setup
     "flask",
+    "pylint", # used for uml diagramms
 ]
 
 # https://hatch.pypa.io/latest/config/environment/overview/#scripts
