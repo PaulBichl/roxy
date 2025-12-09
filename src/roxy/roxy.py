@@ -77,7 +77,7 @@ class Roxy:
         except Exception:
             logging.error("hardware initialization failed, if simulating, ignore this.")
         self.model = None
-        self._sim = False  # TODO implement
+        self._sim = False
         self.notify_cooldown = 1.0  # seconds
         self.discord_webhook = ""
 
