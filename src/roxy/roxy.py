@@ -93,31 +93,31 @@ class Roxy:
         self.discord_webhook = discord_webhook  # no default webhook possible
         self.conf_threshold = conf_threshold
         global LOCK_OVERRIDE  # noqa: PLW0603
-        if lock_override != LOCK_OVERRIDE:  # this should only be engaged after changing the config via webinterface
-            LOCK_OVERRIDE = lock_override
-        if lock_state == "LOCKED":
-            self.lock.lock()
-        elif lock_state == "UNLOCKED":
-            self.lock.unlock()
+        if not self._sim:
+            if lock_override != LOCK_OVERRIDE:  # this should only be engaged after changing the config via webinterface
+                LOCK_OVERRIDE = lock_override
+            if lock_state == "LOCKED":
+                self.lock.lock()
+            elif lock_state == "UNLOCKED":
+                self.lock.unlock()
 
     def load_config(self, config_path: str = "./config.json") -> None:
         """
-        Extract info from config file and call config()
+        Extract info from config file and call config(), missing values are set to defaults
         """
         with open(config_path, encoding="utf-8") as f:
             cfg = json.load(f)
-        try:
-            self.config(
-                simulate=cfg["simulate"],
-                discord_webhook=cfg["discord_webhook"],
-                conf_threshold=cfg["conf_threshold"],
-                lock_override=cfg["lock_override"],
-                lock_state=cfg["lock_state"],
-            )
-        except KeyError as e:
-            missing = str(e).replace("'", "")
-            msg = f"Missing required config key: '{missing}' in {config_path}"
-            raise Exception(msg) from e
+
+        defaults = {
+            "simulate": False,
+            "discord_webhook": "",
+            "conf_threshold": 0.5,
+            "lock_override": False,
+            "lock_state": "locked",
+        }
+
+        merged = {**defaults, **cfg}
+        self.config(**merged)
 
     def initialize_model(self, model_path: str) -> None:
         """
