@@ -112,7 +112,7 @@ class Roxy:
             "simulate": False,
             "discord_webhook": "",
             "conf_threshold": 0.5,
-            "lock_override": False,
+            "lock_override": True,
             "lock_state": "locked",
         }
 
