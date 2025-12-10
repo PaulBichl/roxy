@@ -87,6 +87,7 @@ class Roxy:
         discord_webhook: str = "",
         conf_threshold: float = 0.5,
         lock_override: bool = True,
+        lock_state: str = "LOCKED",
     ) -> None:
         self._sim = simulate
         self.discord_webhook = discord_webhook  # no default webhook possible
@@ -94,6 +95,10 @@ class Roxy:
         global LOCK_OVERRIDE  # noqa: PLW0603
         if lock_override != LOCK_OVERRIDE:  # this should only be engaged after changing the config via webinterface
             LOCK_OVERRIDE = lock_override
+        if lock_state == "LOCKED":
+            self.lock.lock()
+        elif lock_state == "UNLOCKED":
+            self.lock.unlock()
 
     def load_config(self, config_path: str = "./config.json") -> None:
         """
@@ -107,6 +112,7 @@ class Roxy:
                 discord_webhook=cfg["discord_webhook"],
                 conf_threshold=cfg["conf_threshold"],
                 lock_override=cfg["lock_override"],
+                lock_state=cfg["lock_state"],
             )
         except KeyError as e:
             missing = str(e).replace("'", "")
