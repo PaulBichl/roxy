@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Pi Zero Control</title>
+    <style>
+        body { font-family: sans-serif; margin: 30px; }
+        label { display: block; margin: 10px 0; }
+        button { margin: 5px; padding: 8px 28px; }
+        #status { margin-top: 15px; color: green; }
+    </style>
+</head>
+<body>
+    <h1>Raspberry Pi Control Panel</h1>
+    <form id="server">
+        <h2>Server Control</h2>
+        <div>
+            <label>Server Actions:</label>
+            <button type="button" onclick="sendStart()">Start</button>
+            <button type="button" onclick="sendStop()">Stop</button>
+            <button type="button" onclick="sendRestart()">Restart</button>
+            <button type="button" onclick="getLockState()">Update Lock Status</button>
+            <label id="lockStatus">Current Lock Status: {{ lock_state }}
+            <button type="button" onclick="toggleLock()">Toggle Lock</button> </label>
+
+        <!-- Call the client-side reset function so fields are cleared immediately -->
+         </div>
+    </form>
+    <form id="updateForm">
+    <h2>Update Configuration</h2>
+    <!-- Use 'Discord_webhook' (underscore) so it matches the server's request.form key -->
+    <label>Discord Webhook: <input type="text" name="Discord_webhook" value="{{ config.get('Discord_webhook', '') }}"></label>
+
+     <label for="conf_threshold">What should the confidance of the model be to take an action:
+        <select name="conf_threshold" id="conf_threshold">
+            <option value="0.5">0.5</option>
+            <option value="0.75">0.75</option>
+            <option value="0.9">0.9</option>
+        </select></label>
+    <label for="lock_state">Choose starting state for lock:
+        <select name="lock_state" id="lock_state">
+            <option value="UNLOCKED">Unlocked</option>
+            <option value="LOCKED">Locked</option>
+            </select></label>
+
+    <label for="lock_override">Should locking mechanism be on or off:
+        <select name="lock_override" id="lock_override">
+            <option value="false">On</option>
+            <option value="true">Off</option>
+        </select></label>
+
+        <button type="button" onclick="sendUpdate('Update')">Update</button>
+        <button type="button" onclick="sendReset()">Reset</button>
+    </form>
+
+    <div id="status"></div>
+
+    <script>
+         async function sendStart() {
+            const response = await fetch("/start", { method: "POST" });
+            const result = await response.json();
+            document.getElementById("status").innerText =
+                "Status: " + result.status + (result.error ? " (" + result.error + ")" : "");
+        }
+
+        async function sendStop() {
+            const response = await fetch("/stop", { method: "POST" });
+            const result = await response.json();
+            document.getElementById("status").innerText =
+                "Status: " + result.status + (result.error ? " (" + result.error + ")" : "");
+        }
+
+        async function sendRestart() {
+            const response = await fetch("/restart", { method: "POST" });
+            const result = await response.json();
+            document.getElementById("status").innerText =
+                "Status: " + result.status + (result.error ? " (" + result.error + ")" : "");
+        }
+
+        async function getLockState() {
+            const response = await fetch("/get_lock_state", { method: "GET" });
+            const result = await response.json();
+            document.getElementById("lockStatus").innerText =
+                "Current Lock Status: " + result.lock_state;
+        }
+
+        async function toggleLock() {
+            const response = await fetch("/toggle_lock", { method: "POST" });
+            const result = await response.json();
+            document.getElementById("status").innerText =
+                "Status: " + result.status + (result.error ? " (" + result.error + ")" : "");
+        }
+
+        async function sendUpdate(action) {
+            const form = document.getElementById("updateForm");
+            const formData = new FormData(form);
+            formData.append("action", action);
+
+            const response = await fetch("/update", {
+                method: "POST",
+                body: formData
+            });
+            const result = await response.json();
+            document.getElementById("status").innerText =
+                "Status: " + result.status + (result.error ? " (" + result.error + ")" : "");
+        }
+            async function sendReset() {
+                const form = document.getElementById("updateForm");
+                form.reset();
+                // give quick feedback to the user
+                document.getElementById("status").innerText = "Status: form cleared";
+        }
+    </script>
+</body>
+</html>

@@ -218,6 +218,8 @@ ignore = [ # currently the rules are quite strict
     "B007",  # Loop control variable not used within the loop body
     "S108", # hardcoded file paths, etc
     "SIM105", # i dont understand this one
+    "S603", # subprocess without shell=False
+    "S607", # scp usage
 ]
 # https://docs.astral.sh/ruff/settings/#unfixable
 unfixable = []
