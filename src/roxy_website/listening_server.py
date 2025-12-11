@@ -80,7 +80,7 @@ def start_container() -> tuple:
 def get_lock_state():  # noqa: ANN201 -> Response
     flap_lock = FlapLock()
     state = flap_lock.lock_state
-    return jsonify({"lock_state": state})
+    return jsonify({state})
 
 
 @app.route("/toggle_lock", methods=["post"])
