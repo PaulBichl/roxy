@@ -6,6 +6,7 @@ FROM ghcr.io/dtcooper/raspberrypi-os:bookworm
 RUN apt-get update && apt-get install -y \
     rpicam-apps \
     python3-picamera2 \
+    #Test without libcamera should be old version
     python3-libcamera \
     python3-numpy \
     python3-pip \
