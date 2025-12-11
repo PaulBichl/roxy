@@ -16,5 +16,5 @@ docker run -d \
   -v /etc/localtime:/etc/localtime:ro \
   -v /etc/timezone:/etc/timezone:ro \
   -e TZ="$(cat /etc/timezone)" \
-  -v "$PWD/data.json:/camera/data.json:ro" \
+  -v "$PWD/config.json:/camera/config.json:ro" \
   p5-camera
