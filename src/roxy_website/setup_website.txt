@@ -1,5 +1,5 @@
 ============================================================
-SETUP INSTRUCTIONS FOR LISTENING SERVER
+SETUP INSTRUCTIONS FOR website
 ============================================================
 !!!Remember to change variables so they fit your own setup!!!
 We have used, user: p5 & directory: /home/p5/roxy/src/roxy_website/
@@ -13,9 +13,7 @@ Activate it:
     source .roxy/bin/activate
 
 Install dependencies:
-    pip install docker
     pip install flask
-    pip install flask_cors
 
 Exit environment (when done):
     deactivate
@@ -25,19 +23,19 @@ Exit environment (when done):
 ============================================================
 
 Create the service file:
-    sudo nano /etc/systemd/system/listening_server.service
+    sudo nano /etc/systemd/system/config_website.service
 
 Paste the following configuration:
 ------------------------------------------------------------
 [Unit]
-Description=Website listening server for Docker controller
+Description=Configuration website for UI
 After=network-online.target
 Wants=network-online.target
 
 [Service]
 User=p5
 WorkingDirectory=/home/p5/roxy/src/roxy_website/
-ExecStart=/home/p5/roxy/src/roxy_website/.roxy/bin/python /home/p5/roxy/src/roxy_website/listening_server.py
+ExecStart=/home/p5/roxy/src/roxy_website/.roxy/bin/python /home/p5/roxy/src/roxy_website/App.py
 Restart=always
 RestartSec=5
 
@@ -56,23 +54,23 @@ Reload systemd to see the new file:
     sudo systemctl daemon-reload
 
 Enable it to start on boot:
-    sudo systemctl enable listening_server.service
+    sudo systemctl enable config_website.service
 
 Start it immediately without rebooting:
-    sudo systemctl start listening_server.service
+    sudo systemctl start config_website.service
 
 Check status (verify it works):
-    sudo systemctl status listening_server.service
+    sudo systemctl status config_website.service
 
 ============================================================
 CHEAT SHEET COMMANDS
 ============================================================
 
 To STOP the server immediately:
-    sudo systemctl stop listening_server.service
+    sudo systemctl stop config_website.service
 
 To RESTART (after changing python code):
-    sudo systemctl restart listening_server.service
+    sudo systemctl restart config_website.service
 
 To VIEW LOGS (if it crashes):
-    sudo journalctl -u listening_server.service -f
+    sudo journalctl -u config_website.service -f
