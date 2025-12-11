@@ -1,0 +1,6 @@
+{
+    "simulate": true,
+    "discord_webhook": "",
+    "conf_threshold": 0.75,
+    "lock_override": false
+}
