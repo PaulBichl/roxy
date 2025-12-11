@@ -104,15 +104,15 @@ def toggle_lock() -> dict:
 def update() -> dict:
     """Persist the posted configuration locally and push it to the remote Pi."""
     # Get values from form
-    action = request.form.get("action")  # which button was pressed
+    request.form.get("action")  # which button was pressed
 
     # Update local JSON
     config = {
+        "simulate": False,
         "Discord_webhook": request.form.get("Discord_webhook"),
         "conf_threshold": request.form.get("conf_threshold"),
-        "lock_state": request.form.get("lock_state"),
         "lock_override": request.form.get("lock_override"),
-        "last_action": action,
+        "lock_state": request.form.get("lock_state"),
     }
     save_json(config)
 
