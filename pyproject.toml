@@ -14,7 +14,7 @@ authors = [
     { name = "Paul Bichl", email = "pbichl25@student.aau.dk" },
     { name = "Isabel Thorson", email = "isabel.e.thorsen@gmail.com" },
     { name = "Alfred Mikkelsen", email = "alfr0424@gmail.com" },
-    { name = "Joud Al Hammound", email = "Joudalhammoud@gmail.com" },
+    { name = "Joud Alhamoud", email = "Joudalhammoud@gmail.com" },
 ]
 
 [project.optional-dependencies]
