@@ -109,7 +109,7 @@ def update() -> dict:
     # Update local JSON
     config = {
         "simulate": False,
-        "Discord_webhook": request.form.get("Discord_webhook"),
+        "discord_webhook": request.form.get("Discord_webhook"),
         "lock_override": (request.form.get("lock_override")) == "true",
         "lock_state": request.form.get("lock_state"),
     }
