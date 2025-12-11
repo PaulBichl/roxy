@@ -23,9 +23,9 @@
             <button type="button" onclick="getLockState()">Update Lock Status</button>
             <label id="lockStatus">Current Lock Status: {{ lock_state }}
             <button type="button" onclick="toggleLock()">Toggle Lock</button> </label>
-            
+
         <!-- Call the client-side reset function so fields are cleared immediately -->
-         </div> 
+         </div>
     </form>
     <!-- Form for updating configuration values stored in config.json -->
     <form id="updateForm">
@@ -45,7 +45,7 @@
             <option value="LOCKED">Locked</option>
             </select></label>
 
-    <label for="lock_override">Should locking mechanism be on or off: 
+    <label for="lock_override">Should locking mechanism be on or off:
         <select name="lock_override" id="lock_override">
             <option value="false">On</option>
             <option value="true">Off</option>
@@ -97,7 +97,7 @@
             document.getElementById("status").innerText =
                 "Status: " + result.status + (result.error ? " (" + result.error + ")" : "");
         }
-        
+
         // Collect form values, add the button action, and send everything to /update.
         async function sendUpdate(action) {
             const form = document.getElementById("updateForm");
