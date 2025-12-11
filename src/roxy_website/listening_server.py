@@ -9,20 +9,18 @@ import docker
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 
-# Import the FlapLock class from the roxy module
-from roxy.roxy import FlapLock
+# Set directory paths to allow imports from the parent 'roxy' module
+current_dir = os.path.dirname(os.path.abspath(__file__))
+parent_dir = os.path.dirname(current_dir)
+sys.path.append(parent_dir)
 
 # Add fake modules to sys.modules to prevent import errors becuase of missing roxy module being imported
 sys.modules["cv2"] = MagicMock()
 sys.modules["gpiozero"] = MagicMock()
 sys.modules["ultralytics"] = MagicMock()
 
-
-# Set directory paths to allow imports from the parent 'roxy' module
-current_dir = os.path.dirname(os.path.abspath(__file__))
-parent_dir = os.path.dirname(current_dir)
-sys.path.append(parent_dir)
-
+# Import the FlapLock class from the roxy module
+from roxy.roxy import FlapLock  # noqa: E402
 
 app = Flask("Docker_controller")
 CORS(app)  # Enable CORS for all routes
