@@ -9,20 +9,19 @@ import docker
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 
+# Import the FlapLock class from the roxy module
 from roxy.roxy import FlapLock
 
+# Add fake modules to sys.modules to prevent import errors becuase of missing roxy module being imported
 sys.modules["cv2"] = MagicMock()
 sys.modules["gpiozero"] = MagicMock()
 sys.modules["ultralytics"] = MagicMock()
 
-# --- FIX IMPORT PATH ---
-# 1. Get the current folder (.../src/website)
+
+# Set directory paths to allow imports from the parent 'roxy' module
 current_dir = os.path.dirname(os.path.abspath(__file__))
-# 2. Get the parent folder (.../src)
 parent_dir = os.path.dirname(current_dir)
-# 3. Add parent folder to Python's search path
 sys.path.append(parent_dir)
-# -----------------------
 
 
 app = Flask("Docker_controller")
@@ -35,6 +34,7 @@ logger = logging.getLogger(__name__)
 CONTAINER_NAME = "motion-detector"
 
 
+# Routes for controlling the Docker container using HTTP
 @app.route("/restart_container", methods=["POST"])
 def restart_container() -> tuple:
     try:
@@ -76,6 +76,7 @@ def start_container() -> tuple:
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
+# Lock state to ensure the user know the current state of the lock
 @app.route("/get_lock_state", methods=["get"])
 def get_lock_state():  # noqa: ANN201 -> Response
     flap_lock = FlapLock()
@@ -83,6 +84,7 @@ def get_lock_state():  # noqa: ANN201 -> Response
     return jsonify({state})
 
 
+# Requirement from should have
 @app.route("/toggle_lock", methods=["post"])
 def toggle_lock() -> None:
     flap_lock = FlapLock()
@@ -93,11 +95,12 @@ def toggle_lock() -> None:
         flap_lock.lock()
 
 
+# Updating the config to implment changes from website
 @app.route("/update", methods=["POST"])
 def update_settings() -> tuple:
     try:
         data = request.json
-        with open("data.json", "w") as f:
+        with open("~/roxy/src/roxy/config.json", "w") as f:
             json.dump(data, f, indent=2)
         return jsonify({"status": "success", "message": "Settings updated."}), 200
     except Exception as e:
@@ -105,6 +108,7 @@ def update_settings() -> tuple:
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
+# Container status not used
 @app.route("/status", methods=["GET"])
 def service_status() -> tuple:
     try:
@@ -119,5 +123,6 @@ def service_status() -> tuple:
         return jsonify({"state": "unknown", "error": str(e)}), 500
 
 
+# Run server onn local host with port 5000
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)  # noqa: S104
