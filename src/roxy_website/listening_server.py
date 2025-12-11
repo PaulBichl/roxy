@@ -79,7 +79,7 @@ def start_container() -> tuple:
 def get_lock_state():  # noqa: ANN201 -> Response
     flap_lock = FlapLock()
     state = flap_lock.lock_state
-    return jsonify({state})
+    return jsonify({"lock_state": state})
 
 
 # Requirement from should have
