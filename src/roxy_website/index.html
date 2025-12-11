@@ -12,6 +12,7 @@
 </head>
 <body>
     <h1>Raspberry Pi Control Panel</h1>
+    <!-- Buttons for controlling the remote service and lock state -->
     <form id="server">
         <h2>Server Control</h2>
         <div>
@@ -22,10 +23,11 @@
             <button type="button" onclick="getLockState()">Update Lock Status</button>
             <label id="lockStatus">Current Lock Status: {{ lock_state }}
             <button type="button" onclick="toggleLock()">Toggle Lock</button> </label>
-
+            
         <!-- Call the client-side reset function so fields are cleared immediately -->
-         </div>
+         </div> 
     </form>
+    <!-- Form for updating configuration values stored in config.json -->
     <form id="updateForm">
     <h2>Update Configuration</h2>
     <!-- Use 'Discord_webhook' (underscore) so it matches the server's request.form key -->
@@ -43,7 +45,7 @@
             <option value="LOCKED">Locked</option>
             </select></label>
 
-    <label for="lock_override">Should locking mechanism be on or off:
+    <label for="lock_override">Should locking mechanism be on or off: 
         <select name="lock_override" id="lock_override">
             <option value="false">On</option>
             <option value="true">Off</option>
@@ -56,6 +58,7 @@
     <div id="status"></div>
 
     <script>
+         // Send a start request to the Flask route; result is shown in the status box.
          async function sendStart() {
             const response = await fetch("/start", { method: "POST" });
             const result = await response.json();
@@ -63,6 +66,7 @@
                 "Status: " + result.status + (result.error ? " (" + result.error + ")" : "");
         }
 
+        // Ask the backend to stop the remote process.
         async function sendStop() {
             const response = await fetch("/stop", { method: "POST" });
             const result = await response.json();
@@ -70,6 +74,7 @@
                 "Status: " + result.status + (result.error ? " (" + result.error + ")" : "");
         }
 
+        // Trigger a container restart on the Pi.
         async function sendRestart() {
             const response = await fetch("/restart", { method: "POST" });
             const result = await response.json();
@@ -77,6 +82,7 @@
                 "Status: " + result.status + (result.error ? " (" + result.error + ")" : "");
         }
 
+        // Fetch the current lock status string and show it inline near the label.
         async function getLockState() {
             const response = await fetch("/get_lock_state", { method: "GET" });
             const result = await response.json();
@@ -84,13 +90,15 @@
                 "Current Lock Status: " + result.lock_state;
         }
 
+        // Flip the lock state remotely and surface any errors to the user.
         async function toggleLock() {
             const response = await fetch("/toggle_lock", { method: "POST" });
             const result = await response.json();
             document.getElementById("status").innerText =
                 "Status: " + result.status + (result.error ? " (" + result.error + ")" : "");
         }
-
+        
+        // Collect form values, add the button action, and send everything to /update.
         async function sendUpdate(action) {
             const form = document.getElementById("updateForm");
             const formData = new FormData(form);
@@ -104,6 +112,7 @@
             document.getElementById("status").innerText =
                 "Status: " + result.status + (result.error ? " (" + result.error + ")" : "");
         }
+            // Clear the form in the browser and show a quick confirmation message.
             async function sendReset() {
                 const form = document.getElementById("updateForm");
                 form.reset();
