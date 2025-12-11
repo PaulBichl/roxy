@@ -2,5 +2,6 @@
     "simulate": true,
     "discord_webhook": "",
     "conf_threshold": 0.75,
-    "lock_override": false
+    "lock_override": false,
+    "lock_state": "locked"
 }
