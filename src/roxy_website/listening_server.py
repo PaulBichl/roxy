@@ -25,7 +25,7 @@ from roxy.roxy import FlapLock  # noqa: E402
 
 flap_lock = FlapLock()
 
-json_path = os.path.join(parent_dir, "config.json")
+json_path = os.path.join(parent_dir, "roxy/config.json")
 with open(json_path) as config:
     lock_state = json.load(config).get("lock_state", "UNKNOWN")
 
