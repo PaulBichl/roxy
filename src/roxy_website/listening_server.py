@@ -4,7 +4,6 @@ import logging
 import subprocess
 
 import docker
-from flap_lock_overwrite import FlapLock
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 
@@ -73,28 +72,27 @@ def lock() -> tuple:
         return jsonify({"status": "error", "message": "Docker is running! Cannot take manual control."}), 409
 
     try:
-        # Initialize hardware ONLY now
-        temp_lock = FlapLock()
-        temp_lock.lock()
-        # Hardware is released when temp_lock goes out of scope (garbage collected)
+        # Uses subprocess to ensure GPIO is released after command
+        cmd = ["python3", "-c", "from flap_lock_overwrite import FlapLock; FlapLock().lock()"]
+        subprocess.run(cmd, cwd="/home/p5/roxy/src/roxy_website", check=True)
+
         return jsonify({"status": "success", "message": "Device locked."}), 200
-    except Exception as e:
-        logger.error(f"Error locking device: {e!s}")
-        return jsonify({"status": "error", "message": str(e)}), 500
+    except subprocess.CalledProcessError as e:
+        logger.error(f"Error locking device: {e}")
+        return jsonify({"status": "error", "message": "Failed to execute lock command"}), 500
 
 
 @app.route("/unlock", methods=["post"])
 def unlock() -> tuple:
-    if is_docker_running():
-        return jsonify({"status": "error", "message": "Docker is running! Cannot take manual control."}), 409
-
     try:
-        temp_lock = FlapLock()
-        temp_lock.unlock()
-        return jsonify({"status": "success", "message": "Device unlocked."}), 200
-    except Exception as e:
-        logger.error(f"Error unlocking device: {e!s}")
-        return jsonify({"status": "error", "message": str(e)}), 500
+        # Uses subprocess to ensure GPIO is released after command
+        cmd = ["python3", "-c", "from flap_lock_overwrite import FlapLock; FlapLock().unlock()"]
+        subprocess.run(cmd, cwd="/home/p5/roxy/src/roxy_website", check=True)
+
+        return jsonify({"status": "success", "message": "Device locked."}), 200
+    except subprocess.CalledProcessError as e:
+        logger.error(f"Error locking device: {e}")
+        return jsonify({"status": "error", "message": "Failed to execute lock command"}), 500
 
 
 # Updating the config to implment changes from website
