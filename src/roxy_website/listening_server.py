@@ -23,6 +23,12 @@ sys.modules["ultralytics"] = MagicMock()
 # Import the FlapLock class from the roxy module
 from roxy.roxy import FlapLock  # noqa: E402
 
+flap_lock = FlapLock()
+
+json_path = os.path.join(parent_dir, "config.json")
+with open(json_path) as config:
+    lock_state = json.load(config).get("lock_state", "UNKNOWN")
+
 app = Flask("Docker_controller")
 CORS(app)  # Enable CORS for all routes
 
@@ -70,20 +76,24 @@ def start_container() -> tuple:
 # Lock state to ensure the user know the current state of the lock
 @app.route("/get_lock_state", methods=["get"])
 def get_lock_state():  # noqa: ANN201 -> Response
-    flap_lock = FlapLock()
-    state = flap_lock.lock_state
-    return jsonify({"lock_state": state})
+    return jsonify({"lock_state": lock_state})
 
 
 # Requirement from should have
 @app.route("/toggle_lock", methods=["post"])
-def toggle_lock() -> None:
-    flap_lock = FlapLock()
-    state = flap_lock.lock_state
-    if state == "LOCKED":
-        flap_lock.unlock()
-    else:
+def toggle_lock() -> dict:
+    # Use the global variable lock_state to keep track of the lock state
+    global lock_state  # noqa: PLW0603
+
+    if lock_state == "unlocked":
         flap_lock.lock()
+        lock_state = "locked"
+
+    else:
+        flap_lock.unlock()
+        lock_state = "unlocked"
+
+    return jsonify({"lock_state": lock_state})
 
 
 # Updating the config to implment changes from website
