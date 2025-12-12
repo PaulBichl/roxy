@@ -81,7 +81,7 @@ def lock() -> None:
     curl_command = ["curl", "-X", "POST", f"http://{REMOTE_SERVER_URL}/lock"]
     try:
         subprocess.run(curl_command, check=True)
-        result = {"status": "OK", "message": "Lock toggled successfully."}
+        result = {"status": "OK", "message": "Locked successfully."}
     except subprocess.CalledProcessError as e:
         result = {"status": "FAILED", "error": str(e)}
     return jsonify(result)
@@ -93,7 +93,7 @@ def unlock() -> dict:
     curl_command = ["curl", "-X", "POST", f"http://{REMOTE_SERVER_URL}/unlock"]
     try:
         subprocess.run(curl_command, check=True)
-        result = {"status": "OK", "message": "Unlock toggled successfully."}
+        result = {"status": "OK", "message": "Unlocked successfully."}
     except subprocess.CalledProcessError as e:
         result = {"status": "FAILED", "error": str(e)}
     return jsonify(result)
