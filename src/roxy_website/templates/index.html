@@ -21,8 +21,9 @@
             <button type="button" onclick="sendStop()">Stop</button>
             <button type="button" onclick="sendRestart()">Restart</button>
             <button type="button" onclick="getLockState()">Update Lock Status</button>
-            <label id="lockStatus">Current Lock Status: {{ lock_state }}</label>
-            <button type="button" onclick="toggleLock()">Toggle Lock</button>
+            <label id="lockToogle">Change lock while service offline</label>
+            <button type="button" onclick="lock()">Lock</button>
+            <button type="button" onclick="unlock()">Unlock</button>
          </div>
     </form>
 
@@ -89,18 +90,15 @@
             set_status(result);
         }
 
-        // Fetch the current lock status string and show it inline near the label.
-        async function getLockState() {
-            const response = await fetch("/get_lock_state", { method: "GET" });
+        // Flip the lock state remotely and surface any errors to the user.
+        async function lock() {
+            const response = await fetch("/lock", { method: "POST" });
             const result = await response.json();
-            document.getElementById("lockStatus").innerText =
-                "Current Lock Status: " + result.lock_state;
-            set_status({ status: "Lock status updated" });
+            set_status(result);
         }
 
-        // Flip the lock state remotely and surface any errors to the user.
-        async function toggleLock() {
-            const response = await fetch("/toggle_lock", { method: "POST" });
+        async function unlock() {
+            const response = await fetch("/unlock", { method: "POST" });
             const result = await response.json();
             set_status(result);
         }

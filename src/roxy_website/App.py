@@ -75,26 +75,25 @@ def restart() -> dict:
     return jsonify(result)
 
 
-@app.route("/get_lock_state", methods=["GET"])
-def get_lock_state() -> dict:
-    """Read the lock state from the remote device and return it to the UI."""
-    curl_command = ["curl", "-X", "GET", f"http://{REMOTE_SERVER_URL}/get_lock_state"]
+@app.route("/lock", methods=["POST"])
+def lock() -> None:
+    """Ask the remote device to lock."""
+    curl_command = ["curl", "-X", "POST", f"http://{REMOTE_SERVER_URL}/lock"]
     try:
-        response = subprocess.run(curl_command, check=True, capture_output=True, text=True)
-        lock_state = response.stdout.strip()
-        result = {"status": "OK", "lock_state": lock_state}
+        subprocess.run(curl_command, check=True)
+        result = {"status": "OK", "message": "Lock toggled successfully."}
     except subprocess.CalledProcessError as e:
         result = {"status": "FAILED", "error": str(e)}
     return jsonify(result)
 
 
-@app.route("/toggle_lock", methods=["POST"])
-def toggle_lock() -> dict:
-    """Ask the remote device to flip the current lock state."""
-    curl_command = ["curl", "-X", "POST", f"http://{REMOTE_SERVER_URL}/toggle_lock"]
+@app.route("/unlock", methods=["POST"])
+def unlock() -> dict:
+    """Ask the remote device to unlock."""
+    curl_command = ["curl", "-X", "POST", f"http://{REMOTE_SERVER_URL}/unlock"]
     try:
         subprocess.run(curl_command, check=True)
-        result = {"status": "OK", "message": "Lock toggled successfully."}
+        result = {"status": "OK", "message": "Unlock toggled successfully."}
     except subprocess.CalledProcessError as e:
         result = {"status": "FAILED", "error": str(e)}
     return jsonify(result)

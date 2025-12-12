@@ -16,6 +16,8 @@ Install dependencies:
     pip install docker
     pip install flask
     pip install flask_cors
+    pip install gpiozero
+    pip install rpi-lgpio
 
 Exit environment (when done):
     deactivate

@@ -1,33 +1,14 @@
 # Now this import will work because Python can see the 'roxy' folder in 'src'
 import json
 import logging
-import os
 import subprocess
-import sys
-from unittest.mock import MagicMock
 
 import docker
+from flap_lock_overwrite import FlapLock
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 
-# Set directory paths to allow imports from the parent 'roxy' module
-current_dir = os.path.dirname(os.path.abspath(__file__))
-parent_dir = os.path.dirname(current_dir)
-sys.path.append(parent_dir)
-
-# Add fake modules to sys.modules to prevent import errors becuase of missing roxy module being imported
-sys.modules["cv2"] = MagicMock()
-sys.modules["gpiozero"] = MagicMock()
-sys.modules["ultralytics"] = MagicMock()
-
-# Import the FlapLock class from the roxy module
-from roxy.roxy import FlapLock  # noqa: E402
-
-flap_lock = FlapLock()
-
-json_path = os.path.join(parent_dir, "roxy/config.json")
-with open(json_path) as config:
-    lock_state = json.load(config).get("lock_state", "UNKNOWN")
+json_path = "/home/p5/roxy/src/roxy/config.json"
 
 app = Flask("Docker_controller")
 CORS(app)  # Enable CORS for all routes
@@ -38,6 +19,18 @@ logger = logging.getLogger(__name__)
 
 CONTAINER_NAME = "motion-detector"
 run_directory = "/home/p5/roxy/src/roxy/run.sh"
+
+
+def is_docker_running() -> bool:
+    """Check if the Docker container is running."""
+    try:
+        container = client.containers.get(CONTAINER_NAME)
+        return container.status == "running"
+    except docker.errors.NotFound:
+        return False
+    except Exception as e:
+        logger.error(f"Error checking Docker status: {e!s}")
+        return False
 
 
 # Routes for controlling the Docker container using HTTP
@@ -73,27 +66,35 @@ def start_container() -> tuple:
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
-# Lock state to ensure the user know the current state of the lock
-@app.route("/get_lock_state", methods=["get"])
-def get_lock_state():  # noqa: ANN201 -> Response
-    return jsonify({"lock_state": lock_state})
+# Manual lock overrides (not using Docker)
+@app.route("/lock", methods=["post"])
+def lock() -> tuple:
+    if is_docker_running():
+        return jsonify({"status": "error", "message": "Docker is running! Cannot take manual control."}), 409
+
+    try:
+        # Initialize hardware ONLY now
+        temp_lock = FlapLock()
+        temp_lock.lock()
+        # Hardware is released when temp_lock goes out of scope (garbage collected)
+        return jsonify({"status": "success", "message": "Device locked."}), 200
+    except Exception as e:
+        logger.error(f"Error locking device: {e!s}")
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 
-# Requirement from should have
-@app.route("/toggle_lock", methods=["post"])
-def toggle_lock() -> dict:
-    # Use the global variable lock_state to keep track of the lock state
-    global lock_state  # noqa: PLW0603
+@app.route("/unlock", methods=["post"])
+def unlock() -> tuple:
+    if is_docker_running():
+        return jsonify({"status": "error", "message": "Docker is running! Cannot take manual control."}), 409
 
-    if lock_state == "unlocked":
-        flap_lock.lock()
-        lock_state = "locked"
-
-    else:
-        flap_lock.unlock()
-        lock_state = "unlocked"
-
-    return jsonify({"lock_state": lock_state})
+    try:
+        temp_lock = FlapLock()
+        temp_lock.unlock()
+        return jsonify({"status": "success", "message": "Device unlocked."}), 200
+    except Exception as e:
+        logger.error(f"Error unlocking device: {e!s}")
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 
 # Updating the config to implment changes from website
@@ -101,7 +102,7 @@ def toggle_lock() -> dict:
 def update_settings() -> tuple:
     try:
         data = request.json
-        with open("~/roxy/src/roxy/config.json", "w") as f:
+        with open(json_path, "w") as f:
             json.dump(data, f, indent=2)
         return jsonify({"status": "success", "message": "Settings updated."}), 200
     except Exception as e:
