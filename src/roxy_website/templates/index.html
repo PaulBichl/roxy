@@ -59,12 +59,20 @@
     <div id="status"></div>
 
     <script>
+        //Function to set status with a timeout to clear it
+        function set_status(result) {
+            document.getElementById("status").innerText =
+                "Status: " + result.status + (result.error ? " (" + result.error + ")" : "");
+            setTimeout(() => {
+                document.getElementById("status").innerText = "";
+            }, 2000);
+        }
+
          // Send a start request to the Flask route; result is shown in the status box.
          async function sendStart() {
             const response = await fetch("/start", { method: "POST" });
             const result = await response.json();
-            document.getElementById("status").innerText =
-                "Status: " + result.status + (result.error ? " (" + result.error + ")" : "");
+            set_status(result);
         }
 
         // Ask the backend to stop the remote process.
@@ -89,14 +97,14 @@
             const result = await response.json();
             document.getElementById("lockStatus").innerText =
                 "Current Lock Status: " + result.lock_state;
+            set_status({ status: "Lock status updated" });
         }
 
         // Flip the lock state remotely and surface any errors to the user.
         async function toggleLock() {
             const response = await fetch("/toggle_lock", { method: "POST" });
             const result = await response.json();
-            document.getElementById("status").innerText =
-                "Status: " + result.status + (result.error ? " (" + result.error + ")" : "");
+            set_status(result);
         }
 
         // Collect form values, add the button action, and send everything to /update.
@@ -110,15 +118,14 @@
                 body: formData
             });
             const result = await response.json();
-            document.getElementById("status").innerText =
-                "Status: " + result.status + (result.error ? " (" + result.error + ")" : "");
+            set_status(result);
         }
             // Clear the form in the browser and show a quick confirmation message.
             async function sendResetForm() {
                 const form = document.getElementById("updateForm");
                 form.reset();
                 // give quick feedback to the user
-                document.getElementById("status").innerText = "Status: form cleared";
+                set_status({ status: "form cleared" });
         }
     </script>
 </body>
