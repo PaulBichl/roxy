@@ -79,16 +79,14 @@
         async function sendStop() {
             const response = await fetch("/stop", { method: "POST" });
             const result = await response.json();
-            document.getElementById("status").innerText =
-                "Status: " + result.status + (result.error ? " (" + result.error + ")" : "");
+            set_status(result);
         }
 
         // Trigger a container restart on the Pi.
         async function sendRestart() {
             const response = await fetch("/restart", { method: "POST" });
             const result = await response.json();
-            document.getElementById("status").innerText =
-                "Status: " + result.status + (result.error ? " (" + result.error + ")" : "");
+            set_status(result);
         }
 
         // Fetch the current lock status string and show it inline near the label.
