@@ -1,6 +1,7 @@
 import json  # For reading/writing JSON config files
 import subprocess  # For running system shell commands (like curl)
 
+import requests
 from flask import (  # Flask web framework and helpers for web, templates, ajax/json
     Flask,
     jsonify,
@@ -15,13 +16,13 @@ REMOTE_SERVER_URL = "192.168.1.112:5000"  # URL/IP of the remote server (the Ras
 
 
 def save_json(config) -> None:
-    """Persist the posted configuration dictionary to config.json."""
+    # Save the given config dictionary to the local config.json file.
     with open(JSON_PATH, "w") as f:
         json.dump(config, f, indent=4)
 
 
 def load_json() -> dict:
-    """Read the existing config.json file if it exists; otherwise return an empty dict."""
+    # Read the existing config.json file if it exists; otherwise return an empty dict.
     try:
         with open(JSON_PATH) as f:
             return json.load(f)
@@ -31,71 +32,89 @@ def load_json() -> dict:
 
 @app.route("/")
 def index() -> str:
-    """Render the main control panel UI with any previously saved config values."""
+    # Render the main control panel UI with any previously saved config values.
     config = load_json()
     return render_template("index.html", config=config)
 
 
-"""DO NOT TOUCH THE ROUTES, they work with the remote server as is"""
+# -----------DO NOT TOUCH THE ROUTES, they work with the remote server as is-------------#
 
 
 @app.route("/start", methods=["POST"])
 def start() -> dict:
-    """Call the remote endpoint that start the container running on the Pi."""
-    curll_command = ["curl", "-X", "POST", f"http://{REMOTE_SERVER_URL}/start_container"]
-    try:
-        subprocess.run(curll_command, check=True)
+    # Send start request to remote device.
+    url = f"http://{REMOTE_SERVER_URL}/start_container"
+    # Send the request using Python
+    response = requests.post(url, timeout=5)
+    # Check the HTTP status code
+    if response.status_code == 200:
         result = {"status": "OK", "message": "Container started successfully."}
-    except subprocess.CalledProcessError as e:
-        result = {"status": "FAILED", "error": str(e)}
+    else:
+        result = {"status": "FAILED", "message": f"Server error: {response.status_code}"}
     return jsonify(result)
 
 
 @app.route("/stop", methods=["POST"])
 def stop() -> dict:
-    """Call the remote endpoint that start the container running on the Pi."""
-    curll_command = ["curl", "-X", "POST", f"http://{REMOTE_SERVER_URL}/stop_container"]
-    try:
-        subprocess.run(curll_command, check=True)
+    # Send stop request to remote device.
+    url = f"http://{REMOTE_SERVER_URL}/stop_container"
+    response = requests.post(url, timeout=20)  # High because of delay from Docker
+
+    if response.status_code == 200:
         result = {"status": "OK", "message": "Container stopped successfully."}
-    except subprocess.CalledProcessError as e:
-        result = {"status": "FAILED", "error": str(e)}
+    else:
+        result = {"status": "FAILED", "message": f"Server error: {response.status_code}"}
     return jsonify(result)
 
 
 @app.route("/restart", methods=["POST"])
 def restart() -> dict:
-    """Call the remote endpoint that restarts the container running on the Pi."""
-    curll_command = ["curl", "-X", "POST", f"http://{REMOTE_SERVER_URL}/restart_container"]
-    try:
-        subprocess.run(curll_command, check=True)
+    # Send restart request to remote device.
+    url = f"http://{REMOTE_SERVER_URL}/restart_container"
+    response = requests.post(url, timeout=20)
+
+    if response.status_code == 200:
         result = {"status": "OK", "message": "Container restarted successfully."}
-    except subprocess.CalledProcessError as e:
-        result = {"status": "FAILED", "error": str(e)}
+    else:
+        result = {"status": "FAILED", "message": f"Server error: {response.status_code}"}
     return jsonify(result)
 
 
 @app.route("/lock", methods=["POST"])
-def lock() -> None:
-    """Ask the remote device to lock."""
-    curl_command = ["curl", "-X", "POST", f"http://{REMOTE_SERVER_URL}/lock"]
-    try:
-        subprocess.run(curl_command, check=True)
-        result = {"status": "OK", "message": "Locked successfully."}
-    except subprocess.CalledProcessError as e:
-        result = {"status": "FAILED", "error": str(e)}
+def lock() -> dict:
+    # Send lock request to remote device.
+    url = f"http://{REMOTE_SERVER_URL}/lock"
+    # Send the request using Python
+    response = requests.post(url, timeout=20)
+
+    # Check the HTTP status code
+    if response.status_code == 200:
+        result = {"status": "OK", "message": "Unlocked successfully."}
+    elif response.status_code == 409:
+        # 409 means Conflict (Docker is running)
+        result = {"status": "Failed, Docker Running"}
+    else:
+        # Handle other errors (500, 404, etc)
+        result = {"status": "Failed", "message": f"Server error: {response.status_code}"}
     return jsonify(result)
 
 
 @app.route("/unlock", methods=["POST"])
 def unlock() -> dict:
-    """Ask the remote device to unlock."""
-    curl_command = ["curl", "-X", "POST", f"http://{REMOTE_SERVER_URL}/unlock"]
-    try:
-        subprocess.run(curl_command, check=True)
+    # Send unlock request to remote device.
+    url = f"http://{REMOTE_SERVER_URL}/unlock"
+    # Send the request using Python
+    response = requests.post(url, timeout=5)
+
+    # Check the HTTP status code
+    if response.status_code == 200:
         result = {"status": "OK", "message": "Unlocked successfully."}
-    except subprocess.CalledProcessError as e:
-        result = {"status": "FAILED", "error": str(e)}
+    elif response.status_code == 409:
+        # 409 means Conflict (Docker is running)
+        result = {"status": "Failed, Docker Running"}
+    else:
+        # Handle other errors (500, 404, etc)
+        result = {"status": "Failed", "message": f"Server error: {response.status_code}"}
     return jsonify(result)
 
 
