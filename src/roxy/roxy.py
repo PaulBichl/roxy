@@ -274,7 +274,6 @@ if __name__ == "__main__":
                     while label in SAFE_CLASSES and conf >= roxy.conf_threshold:
                         frame = roxy.capture_frame()
                         label, conf = roxy.classify_frame(frame)
-                        roxy.send_to_discord(IMAGE_PATH, label, conf)
                         time.sleep(0.5)  # small delay to avoid busy looping
 
                     roxy.lock.lock()
