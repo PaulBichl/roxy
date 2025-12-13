@@ -250,16 +250,23 @@ if __name__ == "__main__":
                 if label not in IGNORED_CLASSES:
                     roxy.send_to_discord(IMAGE_PATH, label, conf)
                     logging.info(f"Notification sent for {label} with confidence {conf:.2f}")
+
             # locking logic, default: locked
             if conf >= roxy.conf_threshold and label in SAFE_CLASSES:
-                if last_unlock_time is None:  # only unlock once
-                    roxy.lock.unlock()
-                    logging.info("Flap unlocked for safe class")
-                last_unlock_time = time.time()
-            if last_unlock_time is not None and time.time() - last_unlock_time > 30:  # cant be elif
+                roxy.lock.unlock()
+                while label in SAFE_CLASSES and conf >= roxy.conf_threshold:
+                    frame = roxy.capture_frame()
+                    label, conf = roxy.classify_frame(frame)
                 roxy.lock.lock()
-                last_unlock_time = None
-                logging.info("Flap locked after timeout")
+                logging.info("Flap locked after safe class exited")
+
+                if conf >= roxy.conf_threshold and label in PREY_CLASSES:
+                    roxy.lock.lock()
+                    logging.info("Flap locked due to prey class detection")
+                    while conf >= roxy.conf_threshold and label not in IGNORED_CLASSES:
+                        frame = roxy.capture_frame()
+                        label, conf = roxy.classify_frame(frame)
+                    logging.info("Flap reset to normal operation after prey class exited")
 
         except KeyboardInterrupt:
             logging.info("Keyboard interrupt received, shutting down.")
