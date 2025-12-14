@@ -245,12 +245,12 @@ if __name__ == "__main__":
             frame = roxy.capture_frame()
             label, conf = roxy.classify_frame(frame)
             # removed notoify cooldown for now #TODO reevaluate
-            if (time.time() - last_notify_time) > roxy.notify_cooldown:
+            """if (time.time() - last_notify_time) > roxy.notify_cooldown:
                 last_notify_time = time.time()
-                cv2.imwrite(IMAGE_PATH, frame)
-                if label not in IGNORED_CLASSES:
-                    roxy.send_to_discord(IMAGE_PATH, label, conf)
-                    logging.info(f"Notification sent for {label} with confidence {conf:.2f}")
+                cv2.imwrite(IMAGE_PATH, frame)"""
+            if label not in IGNORED_CLASSES:
+                roxy.send_to_discord(IMAGE_PATH, label, conf)
+                logging.info(f"Notification sent for {label} with confidence {conf:.2f}")
 
             # locking logic, default: locked
             if label in PREY_CLASSES and conf >= roxy.conf_threshold:
