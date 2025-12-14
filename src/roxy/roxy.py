@@ -237,6 +237,7 @@ if __name__ == "__main__":
     roxy.lock.lock()
     last_notify_time = time.time()
     last_unlock_time = time.time()
+    unlock_time = 5  # seconds to keep flap unlocked after safe class has been detected
     prey_latched = False
     logging.info("Roxy application initialized successfully")
     while True:
@@ -268,12 +269,31 @@ if __name__ == "__main__":
                     continue
                 else:
                     roxy.lock.unlock()
+                    last_unlock_time = time.time()
                     logging.info("Safe class detected")
-
-                    while label in SAFE_CLASSES and conf >= roxy.conf_threshold:
+                    # Loop continues as long as we are with
+                    # in the timeout window
+                    while (time.time() - last_unlock_time) < unlock_time:
                         frame = roxy.capture_frame()
                         label, conf = roxy.classify_frame(frame)
-                        time.sleep(0.1)  # small delay to avoid busy looping
+
+                        if label in PREY_CLASSES and conf >= roxy.conf_threshold:
+                            roxy.lock.lock()
+                            # Save image of the prey that caused the lock
+                            cv2.imwrite(IMAGE_PATH, frame)
+                            roxy.send_to_discord(IMAGE_PATH, label, conf)
+                            prey_latched = True
+                            logging.info("Flap re-locked due to prey class detected during unlock period")
+                            break
+
+                        elif label in SAFE_CLASSES and conf >= roxy.conf_threshold:
+                            last_unlock_time = time.time()
+                            time.sleep(0.1)  # small delay to avoid busy waiting
+                            continue
+
+                        else:
+                            time.sleep(0.1)  # small delay to avoid busy waiting
+                            continue
 
                     roxy.lock.lock()
                     logging.info("Flap re-locked after safe class left")
