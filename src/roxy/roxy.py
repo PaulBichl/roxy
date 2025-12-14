@@ -244,11 +244,10 @@ if __name__ == "__main__":
         try:
             frame = roxy.capture_frame()
             label, conf = roxy.classify_frame(frame)
-            # removed notoify cooldown for now #TODO reevaluate
-            """if (time.time() - last_notify_time) > roxy.notify_cooldown:
+
+            if label not in IGNORED_CLASSES and (time.time() - last_notify_time) > roxy.notify_cooldown:
                 last_notify_time = time.time()
-                cv2.imwrite(IMAGE_PATH, frame)"""
-            if label not in IGNORED_CLASSES:
+                cv2.imwrite(IMAGE_PATH, frame)
                 roxy.send_to_discord(IMAGE_PATH, label, conf)
                 logging.info(f"Notification sent for {label} with confidence {conf:.2f}")
 
@@ -274,7 +273,7 @@ if __name__ == "__main__":
                     while label in SAFE_CLASSES and conf >= roxy.conf_threshold:
                         frame = roxy.capture_frame()
                         label, conf = roxy.classify_frame(frame)
-                        time.sleep(0.5)  # small delay to avoid busy looping
+                        time.sleep(0.1)  # small delay to avoid busy looping
 
                     roxy.lock.lock()
                     logging.info("Flap re-locked after safe class left")
