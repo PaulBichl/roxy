@@ -261,7 +261,6 @@ if __name__ == "__main__":
             elif label in IGNORED_CLASSES and conf >= roxy.conf_threshold:
                 roxy.lock.lock()
                 prey_latched = False
-                logging.info("Flap locked due to ignored class with high confidence")
 
             elif label in SAFE_CLASSES and conf >= roxy.conf_threshold:
                 if prey_latched:
