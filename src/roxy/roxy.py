@@ -238,6 +238,7 @@ if __name__ == "__main__":
     last_notify_time = time.time()
     last_unlock_time = time.time()
     unlock_time = 5  # seconds to keep flap unlocked after safe class has been detected
+    background_counter = 0
     prey_latched = False
     last_lock_state = "LOCKED"
     logging.info("Roxy application initialized successfully")
@@ -265,7 +266,12 @@ if __name__ == "__main__":
                 if last_lock_state != "LOCKED":
                     roxy.lock.lock()
                     last_lock_state = "LOCKED"
-                prey_latched = False
+
+                # Add background counter to avoid issues with misclassification
+                background_counter += 1
+                if background_counter >= 3:
+                    prey_latched = False
+                    background_counter = 0
 
             elif label in SAFE_CLASSES and conf >= roxy.conf_threshold:
                 if prey_latched:
