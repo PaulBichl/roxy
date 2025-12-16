@@ -274,7 +274,6 @@ if __name__ == "__main__":
             elif label in SAFE_CLASSES and conf >= roxy.conf_threshold:
                 if prey_latched:
                     roxy.lock.lock()
-                    continue
 
                 else:
                     roxy.lock.unlock()
@@ -293,18 +292,16 @@ if __name__ == "__main__":
                             roxy.send_to_discord(IMAGE_PATH, label, conf)
                             prey_latched = True
                             logging.info("Flap re-locked due to prey class detected during unlock period")
-                            break
+                            break  # exit while loop
 
                         elif label in SAFE_CLASSES and conf >= roxy.conf_threshold:
                             last_unlock_time = time.time()
                             time.sleep(0.1)  # small delay to avoid busy waiting
-                            continue
 
                         else:
                             time.sleep(0.1)  # small delay to avoid busy waiting
-                            continue
 
-                    roxy.lock.lock()
+                    roxy.lock.lock()  # go back to default locked state
 
             else:  # Fail safe for unknown classes, should not happen
                 roxy.lock.lock()
