@@ -44,7 +44,7 @@ class FlapLock:
         self.action_duration = 0.5  # time the motor runs to fully lock/unlock
 
     def lock(self) -> None:
-        logging.info("Locking flap")
+        logging.debug("Locking flap")
         if LOCK_OVERRIDE:
             logging.debug("Lock override active, skipping lock action")
             return
@@ -56,7 +56,7 @@ class FlapLock:
         self.lock_state = "LOCKED"
 
     def unlock(self) -> None:
-        logging.info("Unlocking flap")
+        logging.debug("Unlocking flap")
         if LOCK_OVERRIDE:
             logging.debug("Lock override active, skipping unlock action")
             return
