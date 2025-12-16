@@ -42,7 +42,7 @@ def restart_container() -> dict:
 
 @app.route("/stop", methods=["POST"])
 @app.route("/stop_container", methods=["POST"])
-def stop_container() -> tuple:
+def stop_container() -> dict:
     try:
         container = client.containers.get(CONTAINER_NAME)
         container.stop()
@@ -56,7 +56,7 @@ def stop_container() -> tuple:
 
 @app.route("/start", methods=["POST"])
 @app.route("/start_container", methods=["POST"])
-def start_container() -> tuple:
+def start_container() -> dict:
     try:
         subprocess.run([run_directory], check=True)
         return jsonify({"status": "success", "message": f"Container {CONTAINER_NAME} started."}), 200
@@ -67,9 +67,9 @@ def start_container() -> tuple:
 
 # Manual lock overrides (not using Docker)
 @app.route("/lock", methods=["post"])
-def lock() -> tuple:
+def lock() -> dict:
     if is_docker_running():
-        return jsonify({"status": "error", "message": "Docker is running! Cannot take manual control."}), 409
+        return jsonify({"status": "error", "message": "Docker is running."}), 409
 
     try:
         # Uses subprocess to ensure GPIO is released after command
@@ -83,7 +83,7 @@ def lock() -> tuple:
 
 
 @app.route("/unlock", methods=["post"])
-def unlock() -> tuple:
+def unlock() -> dict:
     try:
         # Uses subprocess to ensure GPIO is released after command
         cmd = ["python3", "-c", "from flap_lock_overwrite import FlapLock; FlapLock().unlock()"]
@@ -95,9 +95,9 @@ def unlock() -> tuple:
         return jsonify({"status": "error", "message": "Failed to execute lock command"}), 500
 
 
-# Updating the config to implment changes from website
+# Updating the config to implment changes from website (Not used currently)
 @app.route("/update", methods=["POST"])
-def update_settings() -> tuple:
+def update_settings() -> dict:
     try:
         data = request.json
         with open(json_path, "w") as f:
@@ -110,7 +110,7 @@ def update_settings() -> tuple:
 
 # Container status not used
 @app.route("/status", methods=["GET"])
-def service_status() -> tuple:
+def service_status() -> dict:
     try:
         container = client.containers.get(CONTAINER_NAME)
         # Docker status: running, exited, paused, restarting, etc.

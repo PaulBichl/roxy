@@ -2,7 +2,8 @@
 FROM ghcr.io/dtcooper/raspberrypi-os:bookworm
 
 # 2. Install System Dependencies
-# We include python3-venv and python3-pip explicitly just in case
+#Apt packages are installed globally and needed for the image to work correctly
+# We include python3-venv and python3-pip as a just in case
 RUN apt-get update && apt-get install -y \
     rpicam-apps \
     python3-picamera2 \
@@ -16,7 +17,7 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /camera
 
 # 3. Create a Virtual Environment that includes System Packages
-# --system-site-packages is CRITICAL: It lets the venv see picamera2
+# --system-site-packages is CRITICAL: It lets the venv interact with the hardware
 RUN python3 -m venv --system-site-packages /opt/venv
 
 # 4. Activate the venv for all future commands

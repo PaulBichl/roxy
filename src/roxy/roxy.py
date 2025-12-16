@@ -85,10 +85,13 @@ class Roxy:
         self,
         simulate: bool = False,
         discord_webhook: str = "",
-        conf_threshold: float = 0.5,
+        conf_threshold: float = 0.75,
         lock_override: bool = True,
         lock_state: str = "LOCKED",
     ) -> None:
+        """
+        lock_state: "LOCKED" or "UNLOCKED" used to set the lock state at start up
+        """
         self._sim = simulate
         self.discord_webhook = discord_webhook  # no default webhook possible
         self.conf_threshold = conf_threshold
@@ -111,7 +114,7 @@ class Roxy:
         defaults = {
             "simulate": False,
             "discord_webhook": "",
-            "conf_threshold": 0.5,
+            "conf_threshold": 0.75,
             "lock_override": True,
             "lock_state": "locked",
         }
@@ -140,7 +143,7 @@ class Roxy:
         try:
             config = self.picam.create_preview_configuration(
                 main={"size": MODEL_SIZE, "format": "XBGR8888"},
-            )  # i dont understand this, @Isabell pls explain
+            )  # configure camera size and colour format
             self.picam.configure(config)
             self.picam.start()
             logging.info("Camera initialized")
@@ -171,13 +174,13 @@ class Roxy:
                 files = {"file": f}
                 data = {"content": msg}
                 requests.post(self.discord_webhook, data=data, files=files, timeout=5)
-                logging.info("Discord notification sent")
+                logging.debug("Discord notification sent")
         except Exception as e:
             logging.error(f"Failed to send Discord notification: {e!s}")
             msg = "Failed to send Discord notification"
             raise Exception(msg) from e
 
-    def capture_frame(self) -> str:  # cursed
+    def capture_frame(self) -> str:
         """
         Capture frame from camera and prepare for classification, if in sim mode return test image
         """
@@ -186,7 +189,7 @@ class Roxy:
             img_path = os.path.join(module_dir, "test.jpg")
             return cv2.imread(img_path)
         frame_raw = self.picam.capture_array()
-        frame = frame_raw[:, :, :3]
+        frame = frame_raw[:, :, :3]  # Remove alpha channel if present to get BGR format for better yolo compatibility
         if (frame.shape[1], frame.shape[0]) != MODEL_SIZE:
             frame = cv2.resize(frame, MODEL_SIZE, interpolation=cv2.INTER_LINEAR)
         return frame
@@ -317,7 +320,7 @@ if __name__ == "__main__":
                         last_lock_state = "LOCKED"
                         logging.info("Flap re-locked after safe class left")
 
-            else:
+            else:  # Fail safe for unknown classes, should not happen
                 if last_lock_state != "LOCKED":
                     roxy.lock.lock()
                     last_lock_state = "LOCKED"

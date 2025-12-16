@@ -12,7 +12,7 @@ from flask import (  # Flask web framework and helpers for web, templates, ajax/
 app = Flask(__name__)  # Initialize the Flask app
 
 JSON_PATH = "config.json"  # Path to the persistent local configuration file
-REMOTE_SERVER_URL = "192.168.1.112:5000"  # URL/IP of the remote server (the Raspberry Pi)
+REMOTE_SERVER_URL = "192.168.1.112:5000"  # URL of the remote server the Raspberry Pi
 
 
 def save_json(config) -> None:
@@ -92,7 +92,7 @@ def lock() -> dict:
         result = {"status": "OK", "message": "Unlocked successfully."}
     elif response.status_code == 409:
         # 409 means Conflict (Docker is running)
-        result = {"status": "Failed, Docker Running"}
+        result = {"status": "Failed, Docker container blocking hardware running"}
     else:
         # Handle other errors (500, 404, etc)
         result = {"status": "Failed", "message": f"Server error: {response.status_code}"}
