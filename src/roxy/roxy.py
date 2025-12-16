@@ -243,7 +243,6 @@ if __name__ == "__main__":
     unlock_time = 5  # seconds to keep flap unlocked after safe class has been detected
     background_counter = 0
     prey_latched = False
-    last_lock_state = "LOCKED"
     logging.info("Roxy application initialized successfully")
     while True:
         logging.debug("in loop")
@@ -288,9 +287,7 @@ if __name__ == "__main__":
                         label, conf = roxy.classify_frame(frame)
 
                         if label in PREY_CLASSES and conf >= roxy.conf_threshold:
-                            if last_lock_state != "LOCKED":
-                                roxy.lock.lock()
-                                last_lock_state = "LOCKED"
+                            roxy.lock.lock()
                             # Save image of the prey that caused the lock
                             cv2.imwrite(IMAGE_PATH, frame)
                             roxy.send_to_discord(IMAGE_PATH, label, conf)
