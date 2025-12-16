@@ -259,16 +259,12 @@ if __name__ == "__main__":
 
             # locking logic, default: locked
             if label in PREY_CLASSES and conf >= roxy.conf_threshold:
-                if last_lock_state != "LOCKED":
-                    roxy.lock.lock()
-                    last_lock_state = "LOCKED"
+                roxy.lock.lock()
                 prey_latched = True  # Used to prevent model from seeing cat if it comes to close to flap
                 logging.info("Flap locked due to prey class detected")
 
             elif label in IGNORED_CLASSES and conf >= roxy.conf_threshold:
-                if last_lock_state != "LOCKED":
-                    roxy.lock.lock()
-                    last_lock_state = "LOCKED"
+                roxy.lock.lock()
 
                 # Add background counter to avoid issues with misclassification
                 background_counter += 1
@@ -278,15 +274,11 @@ if __name__ == "__main__":
 
             elif label in SAFE_CLASSES and conf >= roxy.conf_threshold:
                 if prey_latched:
-                    if last_lock_state != "LOCKED":
-                        roxy.lock.lock()
-                        last_lock_state = "LOCKED"
+                    roxy.lock.lock()
                     continue
 
                 else:
-                    if last_lock_state != "UNLOCKED":
-                        roxy.lock.unlock()
-                        last_lock_state = "UNLOCKED"
+                    roxy.lock.unlock()
                     last_unlock_time = time.time()
                     logging.info("Safe class detected")
 
@@ -315,15 +307,10 @@ if __name__ == "__main__":
                             time.sleep(0.1)  # small delay to avoid busy waiting
                             continue
 
-                    if last_lock_state != "LOCKED":
-                        roxy.lock.lock()
-                        last_lock_state = "LOCKED"
-                        logging.info("Flap re-locked after safe class left")
+                    roxy.lock.lock()
 
             else:  # Fail safe for unknown classes, should not happen
-                if last_lock_state != "LOCKED":
-                    roxy.lock.lock()
-                    last_lock_state = "LOCKED"
+                roxy.lock.lock()
                 logging.info("Flap locked due to unknown class detected")
 
         except KeyboardInterrupt:
