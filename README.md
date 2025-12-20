@@ -51,10 +51,14 @@ pip install roxy
    ```sh
    .\.hatch\roxy\Scripts\activate.ps1
    ```
+   If you have issues with autherization a possible fix is
+    ```sh
+   Set-ExecutionPolicy RemoteSigned -Force
+   ```
 
-3. **Restart VS Code.**
+4. **Restart VS Code.**
 
-4. **Select the Python interpreter:**
+5. **Select the Python interpreter:**
    - Press `Ctrl+Shift+P` → `Python: Select Interpreter`
    - Choose `('roxy': Hatch)` from the list.
    - If not visible, repeat step 2 or enter the interpreter path manually.
