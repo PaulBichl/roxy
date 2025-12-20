@@ -51,7 +51,7 @@ pip install roxy
    ```sh
    .\.hatch\roxy\Scripts\activate.ps1
    ```
-   If you have issues with autherization a possible fix is
+   If you have issues with authorization a possible fix is
     ```sh
    Set-ExecutionPolicy RemoteSigned -Force
    ```
