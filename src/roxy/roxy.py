@@ -3,7 +3,7 @@ import json
 import logging
 import os
 import time
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 
 import cv2
@@ -175,28 +175,27 @@ class Roxy:
             return
 
         try:
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            filename = f"roxy_{timestamp}_{label}_{conf:.2f}.jpg" if label else f"roxy_{timestamp}.jpg"
-            os.stat(image_path)
+            # Use a higher resolution timestamp for the ID to ensure uniqueness
+            timestamp_id = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+            timestamp_iso = datetime.now(UTC).isoformat().replace("+00:00", "Z")
+
+            filename = f"roxy_{timestamp_id}_{label}.jpg"
 
             with open(image_path, "rb") as f:
-                # 1. Key must be 'assetData'
                 files = {"assetData": (filename, f, "image/jpeg")}
 
-                # 2. Add required tracking metadata
+                # Immich 400 errors usually happen here:
                 data = {
-                    "deviceAssetId": f"roxy-{timestamp}-{filename}",
+                    "deviceAssetId": f"roxy-{timestamp_id}",  # Must be unique
                     "deviceId": "raspberry-pi-roxy",
-                    # Change these lines:
-                    "fileCreatedAt": datetime.now().strftime("%H:%M:%S"),
-                    "fileModifiedAt": datetime.now().strftime("%H:%M:%S"),
+                    "fileCreatedAt": timestamp_iso,
+                    "fileModifiedAt": timestamp_iso,
                     "isFavorite": "false",
-                    "description": f"Detection: {label} | Confidence: {conf:.2f}" if label else "Roxy capture",
+                    "description": f"Detection: {label} ({conf:.2f})" if label else "Roxy capture",
                 }
 
                 headers = {"x-api-key": IMMICH_API_KEY, "Accept": "application/json"}
 
-                # 3. Use the /api/assets endpoint
                 response = requests.post(
                     f"{Immich_URL.rstrip('/')}/api/assets",
                     headers=headers,
@@ -204,6 +203,11 @@ class Roxy:
                     data=data,
                     timeout=15,
                 )
+
+                # This will print the actual error message from Immich's server
+                if response.status_code != 201:
+                    logging.error(f"Immich Error Response: {response.text}")
+
                 response.raise_for_status()
                 logging.info(f"Image uploaded to Immich as {filename}")
 
