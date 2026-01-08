@@ -170,10 +170,6 @@ class Roxy:
             raise Exception(msg) from e
 
     def upload_to_immich(self, image_path: str, label: str = "", conf: float = 0.0) -> None:
-        """
-        Upload image to Immich server with metadata.
-        Renames file with timestamp and label for unique identification.
-        """
         if not IMMICH_API_KEY or not Immich_URL:
             logging.warning("Immich URL or API key not set, skipping upload")
             return
@@ -181,22 +177,36 @@ class Roxy:
         try:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             filename = f"roxy_{timestamp}_{label}_{conf:.2f}.jpg" if label else f"roxy_{timestamp}.jpg"
+            os.stat(image_path)
 
             with open(image_path, "rb") as f:
-                files = {"file": (filename, f, "image/jpeg")}
+                # 1. Key must be 'assetData'
+                files = {"assetData": (filename, f, "image/jpeg")}
+
+                # 2. Add required tracking metadata
                 data = {
+                    "deviceAssetId": f"roxy-{timestamp}-{filename}",
+                    "deviceId": "raspberry-pi-roxy",
+                    # Change these lines:
+                    "fileCreatedAt": datetime.now().strftime("%H:%M:%S"),
+                    "fileModifiedAt": datetime.now().strftime("%H:%M:%S"),
+                    "isFavorite": "false",
                     "description": f"Detection: {label} | Confidence: {conf:.2f}" if label else "Roxy capture",
                 }
-                headers = {"x-api-key": IMMICH_API_KEY}
+
+                headers = {"x-api-key": IMMICH_API_KEY, "Accept": "application/json"}
+
+                # 3. Use the /api/assets endpoint
                 response = requests.post(
-                    f"{Immich_URL}/api/asset/upload",
+                    f"{Immich_URL.rstrip('/')}/api/assets",
                     headers=headers,
                     files=files,
                     data=data,
-                    timeout=10,
+                    timeout=15,
                 )
                 response.raise_for_status()
                 logging.info(f"Image uploaded to Immich as {filename}")
+
         except Exception as e:
             logging.error(f"Failed to upload image to Immich: {e!s}")
 
