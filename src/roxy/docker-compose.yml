@@ -1,25 +1,25 @@
 services:
-    camera-uploader:
-        build: .
-        container_name: camera-uploader
-        restart: unless-stopped
-        privileged: true
-        devices:
-            - /dev/gpiomem
-            - /dev/gpiochip0
-            - /dev/gpiochip1
-        environment:
-            IMMICH_URL: https://immich.ehlers-thorsen.dk
-            TZ: Europe/Copenhagen
-        secrets:
-            - "immich_api_key"
-        volumes:
-            - ./images:/images
-            - /run/udev:/run/udev:ro
-            - /etc/localtime:/etc/localtime:ro
-            - /etc/timezone:/etc/timezone:ro
-            - ./config.json:/camera/config.json:ro
-
-secrets:
-    immich_api_key:
-        file: ./secrets/immich_api_key.txt
+  camera-uploader:
+    build: .
+    container_name: camera-uploader
+    restart: unless-stopped
+    privileged: true
+    network_mode: host # Easier for initial testing of Immich connection
+    devices:
+      - /dev/gpiomem:/dev/gpiomem
+      - /dev/gpiochip0:/dev/gpiochip0
+      - /dev/gpiochip1:/dev/gpiochip1
+      - /dev/vchiq:/dev/vchiq # Add this for video core access
+      - /dev/video11:/dev/video11 # Standard for Pi Camera
+    environment:
+      IMMICH_URL: https://immich.ehlers-thorsen.dk
+      TZ: Europe/Copenhagen
+      # Tell your app where to find the secret if it supports env vars
+      IMMICH_API_KEY_FILE: /run/secrets/immich_api_key
+    secrets:
+      - immich_api_key
+    volumes:
+      - ./images:/images
+      - /run/udev:/run/udev:ro
+      - /etc/localtime:/etc/localtime:ro
+      - ./config.json:/camera/config.json:ro
