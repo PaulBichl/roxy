@@ -3,12 +3,22 @@ services:
         build: .
         container_name: camera-uploader
         restart: unless-stopped
+        privileged: true
+        devices:
+            - /dev/gpiomem
+            - /dev/gpiochip0
+            - /dev/gpiochip1
         environment:
-            IMMICH_URL: instert_your_immich_url_here
+            IMMICH_URL: https://immich.ehlers-thorsen.dk
+            TZ: Europe/Copenhagen
         secrets:
             - "immich_api_key"
         volumes:
             - ./images:/images
+            - /run/udev:/run/udev:ro
+            - /etc/localtime:/etc/localtime:ro
+            - /etc/timezone:/etc/timezone:ro
+            - ./config.json:/camera/config.json:ro
 
 secrets:
     immich_api_key:
