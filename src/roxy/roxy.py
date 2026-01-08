@@ -169,21 +169,34 @@ class Roxy:
             msg = "Camera Init Failed"
             raise Exception(msg) from e
 
-    def upload_to_immich(self, image_path: str) -> None:
+    def upload_to_immich(self, image_path: str, label: str = "", conf: float = 0.0) -> None:
         """
-        Upload image to Immich server
+        Upload image to Immich server with metadata.
+        Renames file with timestamp and label for unique identification.
         """
         if not IMMICH_API_KEY or not Immich_URL:
             logging.warning("Immich URL or API key not set, skipping upload")
             return
 
         try:
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"roxy_{timestamp}_{label}_{conf:.2f}.jpg" if label else f"roxy_{timestamp}.jpg"
+
             with open(image_path, "rb") as f:
-                files = {"file": f}
+                files = {"file": (filename, f, "image/jpeg")}
+                data = {
+                    "description": f"Detection: {label} | Confidence: {conf:.2f}" if label else "Roxy capture",
+                }
                 headers = {"x-api-key": IMMICH_API_KEY}
-                response = requests.post(f"{Immich_URL}/assets/upload", headers=headers, files=files, timeout=10)
+                response = requests.post(
+                    f"{Immich_URL}/api/assets/upload",
+                    headers=headers,
+                    files=files,
+                    data=data,
+                    timeout=10,
+                )
                 response.raise_for_status()
-                logging.info("Image uploaded to Immich successfully")
+                logging.info(f"Image uploaded to Immich as {filename}")
         except Exception as e:
             logging.error(f"Failed to upload image to Immich: {e!s}")
 
@@ -289,6 +302,7 @@ if __name__ == "__main__":
                 last_notify_time = time.time()
                 cv2.imwrite(IMAGE_PATH, frame)
                 roxy.send_to_discord(IMAGE_PATH, label, conf)
+                roxy.upload_to_immich(IMAGE_PATH, label, conf)
                 logging.info(f"Notification sent for {label} with confidence {conf:.2f}")
 
             # locking logic, default: locked
@@ -325,6 +339,7 @@ if __name__ == "__main__":
                             # Save image of the prey that caused the lock
                             cv2.imwrite(IMAGE_PATH, frame)
                             roxy.send_to_discord(IMAGE_PATH, label, conf)
+                            roxy.upload_to_immich(IMAGE_PATH, label, conf)
                             prey_latched = True
                             logging.info("Flap re-locked due to prey class detected during unlock period")
                             break  # exit while loop
