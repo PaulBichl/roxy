@@ -1,0 +1,15 @@
+services:
+    camera-uploader:
+        build: .
+        container_name: camera-uploader
+        restart: unless-stopped
+        environment:
+            IMMICH_URL:
+        secrets:
+            -
+        volumes:
+            - ./images:/images
+
+secrets:
+    immich_api_key:
+        file: ./secrets/immich_api_key.txt

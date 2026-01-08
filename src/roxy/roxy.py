@@ -4,6 +4,7 @@ import logging
 import os
 import time
 from datetime import datetime
+from pathlib import Path
 
 import cv2
 import requests
@@ -14,6 +15,22 @@ try:
 except ModuleNotFoundError:
     pass
 from ultralytics import YOLO
+
+
+def _load_secret(env_name: str, fallback_path: str) -> str:
+    """Get a value from env, otherwise from a file; return empty string if missing."""
+    val = os.getenv(env_name)
+    if val:
+        return val.strip()
+    try:
+        return Path(fallback_path).read_text().strip()
+    except Exception:
+        logging.warning("%s not set and file %s missing", env_name, fallback_path)
+        return ""
+
+
+Immich_URL = _load_secret("IMMICH_URL", "/run/immich_url")
+IMMICH_API_KEY = _load_secret("IMMICH_API_KEY", "/run/secrets/immich_api_key")
 
 logging.basicConfig(
     level=logging.INFO,
@@ -151,6 +168,24 @@ class Roxy:
             logging.error("Camera Init Failed")
             msg = "Camera Init Failed"
             raise Exception(msg) from e
+
+    def upload_to_immich(self, image_path: str) -> None:
+        """
+        Upload image to Immich server
+        """
+        if not IMMICH_API_KEY or not Immich_URL:
+            logging.warning("Immich URL or API key not set, skipping upload")
+            return
+
+        try:
+            with open(image_path, "rb") as f:
+                files = {"file": f}
+                headers = {"x-api-key": IMMICH_API_KEY}
+                response = requests.post(f"{Immich_URL}/assets/upload", headers=headers, files=files, timeout=10)
+                response.raise_for_status()
+                logging.info("Image uploaded to Immich successfully")
+        except Exception as e:
+            logging.error(f"Failed to upload image to Immich: {e!s}")
 
     def send_to_discord(self, image_path: str, label: str, conf: float = 0.0, is_startup: bool = False) -> None:
         """
