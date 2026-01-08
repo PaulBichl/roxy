@@ -176,17 +176,16 @@ class Roxy:
 
         try:
             # Use a higher resolution timestamp for the ID to ensure uniqueness
-            timestamp_id = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
             timestamp_iso = datetime.now(UTC).isoformat().replace("+00:00", "Z")
 
-            filename = f"roxy_{timestamp_id}_{label}.jpg"
+            filename = f"roxy_{timestamp_iso}_{label}_{conf}.jpg"
 
             with open(image_path, "rb") as f:
                 files = {"assetData": (filename, f, "image/jpeg")}
 
                 # Immich 400 errors usually happen here:
                 data = {
-                    "deviceAssetId": f"roxy-{timestamp_id}",  # Must be unique
+                    "deviceAssetId": f"roxy-{timestamp_iso}",  # Must be unique
                     "deviceId": "raspberry-pi-roxy",
                     "fileCreatedAt": timestamp_iso,
                     "fileModifiedAt": timestamp_iso,
