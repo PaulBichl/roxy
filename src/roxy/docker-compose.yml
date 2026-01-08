@@ -4,9 +4,9 @@ services:
         container_name: camera-uploader
         restart: unless-stopped
         environment:
-            IMMICH_URL:
+            IMMICH_URL: instert_your_immich_url_here
         secrets:
-            -
+            - "immich_api_key"
         volumes:
             - ./images:/images
 
