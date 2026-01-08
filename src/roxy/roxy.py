@@ -189,7 +189,7 @@ class Roxy:
                 }
                 headers = {"x-api-key": IMMICH_API_KEY}
                 response = requests.post(
-                    f"{Immich_URL}/api/assets/upload",
+                    f"{Immich_URL}/api/asset/upload",
                     headers=headers,
                     files=files,
                     data=data,
