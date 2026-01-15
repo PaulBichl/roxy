@@ -13,6 +13,7 @@ services:
       TZ: Europe/Copenhagen
     secrets:
       - immich_api_key  # This tells the service to use it
+      - discord_webhook
     volumes:
       - ./images:/images
       - /run/udev:/run/udev:ro
@@ -23,3 +24,5 @@ services:
 secrets:
   immich_api_key:
     file: ./secrets/immich_api_key.txt
+  discord_webhook:
+    file: ./secrets/discord_webhook

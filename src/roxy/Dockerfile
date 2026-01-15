@@ -35,7 +35,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # 8. Setup
-RUN python3 setup.py
+RUN python3 setup/setup.py
 RUN chmod +x roxy.py
 
 CMD ["python3", "roxy.py"]
