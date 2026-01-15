@@ -37,6 +37,7 @@ class Roxy:
         self.last_notify_time = 0.0
         self.immich_client = immich.ImmichUploader()
         self.discord_client = discord.Discord()
+        self._flaplock = flaplock.FlapLock()
         self.background_counter = 0
         self.prey_latched = False
         # expose class-level constants for helpers
@@ -80,13 +81,13 @@ class Roxy:
         if self.lock_override:
             logging.info("Lock override active, skipping lock command")
             return
-        flaplock.lock()
+        self._flaplock.lock()
 
     def unlock(self) -> None:
         if self.lock_override:
             logging.info("Lock override active, skipping unlock command")
             return
-        flaplock.unlock()
+        self._flaplock.unlock()
 
 
 if __name__ == "__main__":
