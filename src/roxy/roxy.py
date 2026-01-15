@@ -66,11 +66,11 @@ class Roxy:
 
         self.last_notify_time = current_time
 
-        try:
-            self.immich_client.upload_to_immich(image_path, label, conf)
-        except Exception as exc:  # log but do not stop notifications
-            logging.error("Immich upload failed: %s", exc)
-
+        if not is_startup:
+            try:
+                self.immich_client.upload_to_immich(image_path, label, conf)
+            except Exception as exc:  # log but do not stop notifications
+                logging.error("Immich upload failed: %s", exc)
         try:
             self.discord_client.send_to_discord(image_path, label, conf, is_startup=is_startup)
         except Exception as exc:
