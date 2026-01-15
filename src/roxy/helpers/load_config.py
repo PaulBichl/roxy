@@ -31,7 +31,6 @@ class Config:
             cfg = json.load(f)
 
         defaults = {
-            "discord_webhook": "",
             "conf_threshold": 0.75,
             "lock_override": True,
             "lock_state": "LOCKED",
