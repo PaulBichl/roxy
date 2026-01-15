@@ -4,8 +4,7 @@ import os
 import time
 
 import cv2
-
-from roxy.helpers import camera, detection_logic, discord, flaplock, immich, load_config, machine_learning_model
+from helpers import camera, detection_logic, discord, flaplock, immich, load_config, machine_learning_model
 
 logging.basicConfig(
     level=logging.INFO,
