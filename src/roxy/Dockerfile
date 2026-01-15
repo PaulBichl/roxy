@@ -28,7 +28,7 @@ ARG PYTHONPATH=""
 ENV PYTHONPATH="/usr/lib/python3/dist-packages:$PYTHONPATH"
 
 # 6. Install Python Dependencies
-COPY requirements.txt .
+COPY setup/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # 7. Copy App
