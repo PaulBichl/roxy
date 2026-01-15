@@ -3,7 +3,7 @@ import time
 
 import cv2
 
-from roxy.helpers import camera
+from . import camera
 
 
 def run_unlock_window(roxy, model_size, image_path, unlock_duration) -> None:
