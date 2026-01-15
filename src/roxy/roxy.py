@@ -78,13 +78,13 @@ class Roxy:
 
     def lock(self) -> None:
         if self.lock_override:
-            logging.info("Lock override active, skipping lock command")
+            # logging.info("Lock override active, skipping lock command")
             return
         self._flaplock.lock()
 
     def unlock(self) -> None:
         if self.lock_override:
-            logging.info("Lock override active, skipping unlock command")
+            # logging.info("Lock override active, skipping unlock command")
             return
         self._flaplock.unlock()
 
