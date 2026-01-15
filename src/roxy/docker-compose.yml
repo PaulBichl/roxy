@@ -23,6 +23,6 @@ services:
 # THIS PART IS MISSING OR MISALIGNED
 secrets:
   immich_api_key:
-    file: ./secrets/immich_api_key.txt
+    file: ./helpers/secrets/immich_api_key.txt
   discord_webhook:
-    file: ./secrets/discord_webhook
+    file: ./helpers/secrets/discord_webhook.txt
