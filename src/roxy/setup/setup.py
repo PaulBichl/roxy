@@ -4,7 +4,7 @@ import gdown
 from ultralytics import YOLO
 
 # download nano classification model in .pt format
-file_id = "1cI_o8UJlvVR4HAy1bSpRjjEDqR6PNSfS"
+file_id = "18KgHfnAvAmR7DuYrtCHeY7vpTvVb4oVr"
 url = f"https://drive.google.com/uc?id={file_id}"
 os.makedirs("./tmp/models", exist_ok=True)
 output = "./tmp/models/model.pt"
