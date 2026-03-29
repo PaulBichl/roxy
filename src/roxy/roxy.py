@@ -4,7 +4,15 @@ import os
 import time
 
 import cv2
-from helpers import camera, detection_logic, discord, flaplock, immich, load_config, machine_learning_model
+from helpers import (
+    camera,
+    detection_logic,
+    discord,
+    flaplock,
+    immich,
+    load_config,
+    machine_learning_model,
+)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -17,10 +25,10 @@ MODEL_SIZE = [640, 640]  # change to IMAGE_SIZE ?
 IMAGE_PATH = "/tmp/motion.jpg"
 UNLOCK_DURATION = 5  # seconds to keep flap unlocked after safe class
 
-SAFE_CLASSES = ["cat"]
-# treat background as a locking condition as requested
-PREY_CLASSES = ["cat+prey"]
-IGNORED_CLASSES = ["background"]
+# Support both legacy and new model label names.
+SAFE_CLASSES = ["cat", "cat_close", "cat_far", "olivia", "roxy"]
+PREY_CLASSES = ["cat+prey", "prey"]
+IGNORED_CLASSES = ["background", "uncertain_background", "uncertain_cat"]
 
 
 # === HARDWARE ===
@@ -58,7 +66,13 @@ class Roxy:
         label, conf = self.classify_frame(dummy_frame)
         self.send_picture(img_path, label, conf, is_startup=True)
 
-    def send_picture(self, image_path: str, label: str = "", conf: float = 0.0, is_startup: bool = False) -> None:
+    def send_picture(
+        self,
+        image_path: str,
+        label: str = "",
+        conf: float = 0.0,
+        is_startup: bool = False,
+    ) -> None:
         current_time = time.time()
         if (current_time - self.last_notify_time) < self.notify_cooldown:
             logging.debug("Skipping notification due to cooldown")
@@ -72,7 +86,12 @@ class Roxy:
             except Exception as exc:  # log but do not stop notifications
                 logging.error("Immich upload failed: %s", exc)
         try:
-            self.discord_client.send_to_discord(image_path, label, conf, is_startup=is_startup)
+            self.discord_client.send_to_discord(
+                image_path,
+                label,
+                conf,
+                is_startup=is_startup,
+            )
         except Exception as exc:
             logging.error("Discord notification failed: %s", exc)
 
@@ -105,10 +124,14 @@ if __name__ == "__main__":
         try:
             frame = camera.Camera.capture_frame(roxy, MODEL_SIZE)
             label, conf = roxy.classify_frame(frame)
-            detection_logic.handle_detection(roxy, label, conf, frame, MODEL_SIZE, IMAGE_PATH, UNLOCK_DURATION)
-
-        except KeyboardInterrupt:
-            logging.info("Keyboard interrupt received, shutting down.")
-            break
+            detection_logic.handle_detection(
+                roxy,
+                label,
+                conf,
+                frame,
+                MODEL_SIZE,
+                IMAGE_PATH,
+                UNLOCK_DURATION,
+            )
         except Exception as e:
             logging.error(f"Error in main loop: {e!s}")
