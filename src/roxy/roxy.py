@@ -26,9 +26,9 @@ IMAGE_PATH = "/tmp/motion.jpg"
 UNLOCK_DURATION = 5  # seconds to keep flap unlocked after safe class
 
 # Support both legacy and new model label names.
-SAFE_CLASSES = ["cat", "cat_close", "cat_far", "olivia", "roxy"]
+SAFE_CLASSES = ["cat", "cat_close", "cat_far", "olivia", "roxy", "uncertain_cat"]
 PREY_CLASSES = ["cat+prey", "prey"]
-IGNORED_CLASSES = ["background", "uncertain_background", "uncertain_cat"]
+IGNORED_CLASSES = ["background", "uncertain_background"]
 
 
 # === HARDWARE ===
