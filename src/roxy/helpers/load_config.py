@@ -7,7 +7,7 @@ class Config:
         target,
         conf_threshold: float = 0.75,
         lock_override: bool = True,
-        lock_state: str = "LOCKED",
+        lock_state: str = "UNLOCKED",
     ) -> None:
         """Apply configuration values to a target instance.
 
@@ -33,7 +33,7 @@ class Config:
         defaults = {
             "conf_threshold": 0.75,
             "lock_override": True,
-            "lock_state": "LOCKED",
+            "lock_state": "UNLOCKED",
         }
 
         merged = {**defaults, **cfg}

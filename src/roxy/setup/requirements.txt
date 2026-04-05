@@ -1,6 +1,6 @@
 gdown
 ultralytics
-opencv-python
+opencv-python-headless  # Faster, lighter, and better for Docker
 requests
 gpiozero
 rpi-lgpio

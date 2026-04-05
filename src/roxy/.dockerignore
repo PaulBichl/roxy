@@ -1,3 +1,7 @@
 config.json
 readme.txt
 __about__.py
+images/
+__pycache__/
+*.pyc
+.git/
