@@ -114,7 +114,7 @@ if __name__ == "__main__":
     load_config.Config().load_config(roxy, "./config.json")
     camera.Camera.__init__(roxy)
     camera.Camera.initialize_camera(roxy, MODEL_SIZE)
-    machine_learning_model.initialize_model("./tmp/models/model_ncnn_model")
+    machine_learning_model.initialize_model("./tmp/models/model_s_ncnn_model")
 
     roxy.start_up()
 
