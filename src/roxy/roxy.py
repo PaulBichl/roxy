@@ -38,9 +38,9 @@ def resolve_model_path() -> str:
     # Allow runtime override for experiments/deployments.
     candidates = [
         os.getenv("ROXY_MODEL_PATH", "").strip(),
-        "./tmp/models/model_ncnn_model",
-        "./tmp/models/model.pt",
-        "./tmp/models/model_s_ncnn_model",
+        "./models/model_ncnn_model",
+        "./models/model.pt",
+        "./models/model_s_ncnn_model",
     ]
 
     checked_paths: list[str] = []

@@ -1,3 +1,4 @@
 /runs/
 yolo*
 **/tmp/
+**/models/

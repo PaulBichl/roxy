@@ -15,7 +15,7 @@ services:
       - immich_api_key  # This tells the service to use it
       - discord_webhook
     volumes:
-      - ./tmp/models:/camera/tmp/models
+      - ./models:/camera/models
       - ./images:/images
       - /run/udev:/run/udev:ro
       - /etc/localtime:/etc/localtime:ro
