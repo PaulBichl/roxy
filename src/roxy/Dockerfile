@@ -31,6 +31,11 @@ RUN pip install --no-cache-dir -r setup/requirements.txt
 
 # 5. Copy and Run Setup
 COPY . .
-RUN python3 setup/setup.py && chmod +x roxy.py
+ARG ROXY_SKIP_MODEL_SETUP=1
+RUN if [ "$ROXY_SKIP_MODEL_SETUP" = "1" ]; then \
+            echo "Skipping setup/setup.py (manual model workflow)"; \
+        else \
+            python3 setup/setup.py; \
+        fi && chmod +x roxy.py
 
 CMD ["python3", "roxy.py"]
