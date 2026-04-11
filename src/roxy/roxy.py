@@ -2,7 +2,6 @@
 import logging
 import os
 import time
-from importlib import resources
 
 import cv2
 from helpers import (
@@ -33,33 +32,8 @@ IGNORED_CLASSES = ["background", "uncertain_background"]
 
 
 def resolve_model_path() -> str:
-    """Return the first existing model path, preferring explicit override."""
-    module_dir = os.path.dirname(os.path.abspath(__file__))
-
-    override = os.getenv("ROXY_MODEL_PATH", "").strip()
-    candidates = [override] if override else []
-
-    package_model = resources.files("roxy") / "models" / "model.pt"
-    candidates.append(str(package_model))
-    candidates.append(os.path.join(module_dir, "models", "model.pt"))
-    candidates.append(os.path.join(module_dir, "./models/model.pt"))
-
-    checked_paths: list[str] = []
-    for candidate in candidates:
-        if not candidate:
-            continue
-
-        checked_paths.append(candidate)
-        if os.path.exists(candidate):
-            return candidate
-
-    checked = "\n - ".join(dict.fromkeys(checked_paths))
-    msg = (
-        "No valid model found. Checked:\n"
-        f" - {checked}\n"
-        "Set ROXY_MODEL_PATH to an existing .pt model file."
-    )
-    raise FileNotFoundError(msg)
+    """Return the bundled model path."""
+    return "models/model.pt"
 
 
 # === HARDWARE ===
