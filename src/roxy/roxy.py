@@ -119,7 +119,7 @@ if __name__ == "__main__":
     load_config.Config().load_config(roxy, "./config.json")
     camera.Camera.__init__(roxy)
     camera.Camera.initialize_camera(roxy, MODEL_SIZE)
-    model_path = resolve_model_path()
+    model_path = "models/model.pt"
     logging.info("Using model path: %s", model_path)
     machine_learning_model.initialize_model(model_path)
 
