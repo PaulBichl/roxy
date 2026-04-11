@@ -2,6 +2,7 @@
 import logging
 import os
 import time
+from importlib import resources
 
 import cv2
 from helpers import (
@@ -35,33 +36,30 @@ def resolve_model_path() -> str:
     """Return the first existing model path, preferring explicit override."""
     module_dir = os.path.dirname(os.path.abspath(__file__))
 
-    # Allow runtime override for experiments/deployments.
-    candidates = [
-        os.getenv("ROXY_MODEL_PATH", "").strip(),
-        "./models/model_ncnn_model",
-        "./models/model.pt",
-        "./models/model_s_ncnn_model",
-    ]
+    override = os.getenv("ROXY_MODEL_PATH", "").strip()
+    candidates = [override] if override else []
+
+    package_model = resources.files("roxy") / "models" / "model.pt"
+    candidates.append(str(package_model))
+    candidates.append(os.path.join(module_dir, "models", "model.pt"))
+    candidates.append(os.path.join(module_dir, "./models/model.pt"))
 
     checked_paths: list[str] = []
     for candidate in candidates:
         if not candidate:
             continue
 
-        potential_paths = [candidate]
-        if not os.path.isabs(candidate):
-            potential_paths.append(os.path.join(module_dir, candidate))
-
-        for path in potential_paths:
-            checked_paths.append(path)
-            if os.path.exists(path):
-                return path
+        checked_paths.append(candidate)
+        if os.path.exists(candidate):
+            return candidate
 
     checked = "\n - ".join(dict.fromkeys(checked_paths))
-    msg = f"No valid model found. Checked:\n - {checked}\nSet ROXY_MODEL_PATH to an existing .pt or *_ncnn_model path."
-    raise FileNotFoundError(
-        msg,
+    msg = (
+        "No valid model found. Checked:\n"
+        f" - {checked}\n"
+        "Set ROXY_MODEL_PATH to an existing .pt model file."
     )
+    raise FileNotFoundError(msg)
 
 
 # === HARDWARE ===
