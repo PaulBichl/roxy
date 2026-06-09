@@ -27,7 +27,7 @@ ENV PYTHONPATH="/usr/lib/python3/dist-packages:$PYTHONPATH"
 
 # 4. Install Pip requirements (Should now find pre-compiled wheels)
 COPY setup/requirements.txt ./setup/
-RUN pip install --no-cache-dir -r setup/requirements.txt
+RUN pip install -r setup/requirements.txt
 
 # 5. Copy and Run Setup
 COPY . .

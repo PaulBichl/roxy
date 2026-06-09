@@ -32,36 +32,8 @@ IGNORED_CLASSES = ["background", "uncertain_background", "human"]
 
 
 def resolve_model_path() -> str:
-    """Return the first existing model path, preferring explicit override."""
-    module_dir = os.path.dirname(os.path.abspath(__file__))
-
-    # Allow runtime override for experiments/deployments.
-    candidates = [
-        os.getenv("ROXY_MODEL_PATH", "").strip(),
-        "./models/model_ncnn_model",
-        "./models/model.pt",
-        "./models/model_s_ncnn_model",
-    ]
-
-    checked_paths: list[str] = []
-    for candidate in candidates:
-        if not candidate:
-            continue
-
-        potential_paths = [candidate]
-        if not os.path.isabs(candidate):
-            potential_paths.append(os.path.join(module_dir, candidate))
-
-        for path in potential_paths:
-            checked_paths.append(path)
-            if os.path.exists(path):
-                return path
-
-    checked = "\n - ".join(dict.fromkeys(checked_paths))
-    msg = f"No valid model found. Checked:\n - {checked}\nSet ROXY_MODEL_PATH to an existing .pt or *_ncnn_model path."
-    raise FileNotFoundError(
-        msg,
-    )
+    """Return the bundled model path."""
+    return "models/model.pt"
 
 
 # === HARDWARE ===
@@ -147,7 +119,7 @@ if __name__ == "__main__":
     load_config.Config().load_config(roxy, "./config.json")
     camera.Camera.__init__(roxy)
     camera.Camera.initialize_camera(roxy, MODEL_SIZE)
-    model_path = resolve_model_path()
+    model_path = "models/model.pt"
     logging.info("Using model path: %s", model_path)
     machine_learning_model.initialize_model(model_path)
 
