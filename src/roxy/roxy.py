@@ -28,7 +28,7 @@ UNLOCK_DURATION = 5  # seconds to keep flap unlocked after safe class
 # Support both legacy and new model label names.
 SAFE_CLASSES = ["cat", "cat_close", "cat_far", "olivia", "roxy", "uncertain_cat"]
 PREY_CLASSES = ["cat+prey", "prey"]
-IGNORED_CLASSES = ["background", "uncertain_background"]
+IGNORED_CLASSES = ["background", "uncertain_background", "human"]
 
 
 def resolve_model_path() -> str:
