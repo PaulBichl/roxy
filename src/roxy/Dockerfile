@@ -24,7 +24,6 @@ WORKDIR /camera
 # 3. Setup Virtual Env with access to the system packages above
 RUN python3 -m venv --system-site-packages /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
-ENV PYTHONPATH="/usr/lib/python3/dist-packages:$PYTHONPATH"
 
 # 4. Install Pip requirements (Should now find pre-compiled wheels)
 COPY setup/requirements.txt ./setup/
