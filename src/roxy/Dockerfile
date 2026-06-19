@@ -2,6 +2,7 @@ FROM ghcr.io/dtcooper/raspberrypi-os:bookworm
 
 # 1. Use PiWheels (CRITICAL for Pi 5 speed)
 ENV PIP_EXTRA_INDEX_URL=https://www.piwheels.org/simple
+ENV YOLO_CONFIG_DIR=/tmp/Ultralytics
 
 # 2. Install System-level math and image libraries
 # These allow pip to skip compiling the heavy stuff.

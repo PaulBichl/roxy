@@ -1,15 +1,25 @@
 import os
+from pathlib import Path
 
-import gdown
+os.environ.setdefault("YOLO_CONFIG_DIR", "/tmp/Ultralytics")
+
+import requests
 from ultralytics import YOLO
 
-# download nano classification model in .pt format
+MODEL_DIR = Path("./tmp/models")
+MODEL_DIR.mkdir(parents=True, exist_ok=True)
+
+# Download nano classification model in .pt format.
 file_id = "18KgHfnAvAmR7DuYrtCHeY7vpTvVb4oVr"
 url = f"https://drive.google.com/uc?id={file_id}"
-os.makedirs("./tmp/models", exist_ok=True)
-output = "./tmp/models/model.pt"
-gdown.download(url, output, quiet=False)
+output = MODEL_DIR / "model.pt"
+with requests.get(url, stream=True, timeout=30) as response:
+    response.raise_for_status()
+    with output.open("wb") as file_handle:
+        for chunk in response.iter_content(chunk_size=1024 * 1024):
+            if chunk:
+                file_handle.write(chunk)
 
-# convert model into NCNN format for edge deployment, is quite fast, no issues with doing this on raspberry pi
-model = YOLO("./tmp/models/model.pt")
+# Convert model into NCNN format for edge deployment.
+model = YOLO(str(output))
 model.export(format="ncnn")

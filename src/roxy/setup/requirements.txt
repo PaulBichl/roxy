@@ -1,4 +1,4 @@
-gdown
+numpy>=1.25,<2
 ultralytics
 opencv-python-headless  # Faster, lighter, and better for Docker
 requests
