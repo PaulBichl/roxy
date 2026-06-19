@@ -1,6 +1,13 @@
 {
     "conf_threshold": 0.75,
     "lock_override": true,
-    "lock_state": "unlocked"
+    "lock_state": "unlocked",
+    "model_size": [320, 320],
+    "model_path": "./tmp/models/model_ncnn_model",
+    "main_loop_delay": 0.05,
+    "unlock_poll_interval": 0.15,
+    "ignored_reset_count": 3,
+    "jpeg_quality": 75,
+    "opencv_threads": 2
 
 }

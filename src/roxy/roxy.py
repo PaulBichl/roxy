@@ -4,15 +4,28 @@ import os
 import time
 
 import cv2
-from helpers import (
-    camera,
-    detection_logic,
-    discord,
-    flaplock,
-    immich,
-    load_config,
-    machine_learning_model,
-)
+
+try:
+    from .helpers import (
+        camera,
+        detection_logic,
+        discord,
+        flaplock,
+        immich,
+        load_config,
+        machine_learning_model,
+    )
+except ImportError:
+    # fallback when running this file directly
+    from helpers import (
+        camera,
+        detection_logic,
+        discord,
+        flaplock,
+        immich,
+        load_config,
+        machine_learning_model,
+    )
 
 logging.basicConfig(
     level=logging.INFO,
@@ -20,8 +33,6 @@ logging.basicConfig(
 )
 
 logging.info("Log entry inside container")
-# Global values (use lowercase keys from defaults/data.json) TODO refctor
-MODEL_SIZE = [640, 640]  # change to IMAGE_SIZE ?
 IMAGE_PATH = "/tmp/motion.jpg"
 UNLOCK_DURATION = 5  # seconds to keep flap unlocked after safe class
 
@@ -42,6 +53,13 @@ class Roxy:
         self.conf_threshold = 0.75
         self.lock_override = True
         self.last_notify_time = 0.0
+        self.model_size = (320, 320)
+        self.main_loop_delay = 0.05
+        self.unlock_poll_interval = 0.15
+        self.ignored_reset_count = 3
+        self.jpeg_quality = 75
+        self.opencv_threads = 2
+        self.model_path = "./tmp/models/model_ncnn_model"
         self.immich_client = immich.ImmichUploader()
         self.discord_client = discord.Discord()
         self._flaplock = flaplock.FlapLock()
@@ -112,26 +130,33 @@ if __name__ == "__main__":
     logging.info("Starting Roxy application")
     roxy = Roxy()
     load_config.Config().load_config(roxy, "./config.json")
+    cv2.setNumThreads(roxy.opencv_threads)
     camera.Camera.__init__(roxy)
-    camera.Camera.initialize_camera(roxy, MODEL_SIZE)
-    machine_learning_model.initialize_model("./tmp/models/model_ncnn_model")
+    camera.Camera.initialize_camera(roxy, roxy.model_size)
+    machine_learning_model.initialize_model(roxy.model_path)
 
     roxy.start_up()
 
     logging.info("Roxy application initialized successfully")
     while True:
         logging.debug("in loop")
+        loop_start = time.time()
         try:
-            frame = camera.Camera.capture_frame(roxy, MODEL_SIZE)
+            frame = camera.Camera.capture_frame(roxy, roxy.model_size)
             label, conf = roxy.classify_frame(frame)
             detection_logic.handle_detection(
                 roxy,
                 label,
                 conf,
                 frame,
-                MODEL_SIZE,
+                roxy.model_size,
                 IMAGE_PATH,
                 UNLOCK_DURATION,
             )
         except Exception as e:
             logging.error(f"Error in main loop: {e!s}")
+
+        if roxy.main_loop_delay > 0.0:
+            remaining = roxy.main_loop_delay - (time.time() - loop_start)
+            if remaining > 0.0:
+                time.sleep(remaining)
